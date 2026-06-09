@@ -1,0 +1,248 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Reset & Base ──────────────────────────────────────────────────────────── */
+* { box-sizing: border-box; }
+
+body {
+  background-color: #0e0e0e;
+  color: #e2e2e2;
+  font-family: 'Inter', system-ui, sans-serif;
+  margin: 0; padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root { width: 100%; min-height: 100vh; }
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #2e2e2e; border-radius: 2px; }
+
+input[type="range"] { accent-color: #2cb99a; }
+input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.5); }
+select option { background: #1a1a1a; }
+
+/* ── Keyframes ─────────────────────────────────────────────────────────────── */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeSlideDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.93); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes slideInBottom {
+  from { opacity: 0; transform: translateY(100%); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(44,185,154,0); }
+  50%       { box-shadow: 0 0 0 6px rgba(44,185,154,0.12); }
+}
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to   { background-position: 200% 0; }
+}
+@keyframes countUp {
+  from { opacity: 0; transform: scale(0.8) translateY(6px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ── Page transition ───────────────────────────────────────────────────────── */
+.page-enter {
+  animation: fadeSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ── Staggered children ────────────────────────────────────────────────────── */
+.stagger-children > * {
+  animation: fadeSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.stagger-children > *:nth-child(1)  { animation-delay: 0.03s; }
+.stagger-children > *:nth-child(2)  { animation-delay: 0.07s; }
+.stagger-children > *:nth-child(3)  { animation-delay: 0.11s; }
+.stagger-children > *:nth-child(4)  { animation-delay: 0.15s; }
+.stagger-children > *:nth-child(5)  { animation-delay: 0.19s; }
+.stagger-children > *:nth-child(6)  { animation-delay: 0.23s; }
+.stagger-children > *:nth-child(7)  { animation-delay: 0.27s; }
+.stagger-children > *:nth-child(8)  { animation-delay: 0.31s; }
+.stagger-children > *:nth-child(9)  { animation-delay: 0.35s; }
+.stagger-children > *:nth-child(10) { animation-delay: 0.39s; }
+
+/* ── Modal animations ──────────────────────────────────────────────────────── */
+.modal-backdrop {
+  animation: fadeIn 0.2s ease both;
+}
+.modal-sheet {
+  animation: slideInBottom 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.modal-dialog {
+  animation: scaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ── Card hover lift ───────────────────────────────────────────────────────── */
+.card-hover {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.2s ease,
+              border-color 0.2s ease;
+}
+.card-hover:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+}
+.card-hover:active {
+  transform: scale(0.98) translateY(0);
+}
+
+/* ── Number pop ────────────────────────────────────────────────────────────── */
+.num-pop {
+  animation: countUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* ── Glow pulse on completion ──────────────────────────────────────────────── */
+.glow-pulse {
+  animation: pulseGlow 2s ease infinite;
+}
+
+/* ── Skeleton shimmer ──────────────────────────────────────────────────────── */
+.shimmer {
+  background: linear-gradient(90deg, #1a1a1a 25%, #242424 50%, #1a1a1a 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@layer components {
+  /* ── Cards ── */
+  .card {
+    @apply bg-card border border-border rounded-xl p-4;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .card:has(a:hover), .card:has(button:focus-visible) {
+    border-color: rgba(255,255,255,0.08);
+  }
+
+  .card-sm { @apply bg-card border border-border rounded-lg p-3; }
+
+  /* ── Buttons ── */
+  .btn-primary {
+    @apply bg-accent text-black font-semibold px-4 py-2 rounded-lg
+           cursor-pointer select-none;
+    font-size: 13px;
+    transition: opacity 0.15s ease, transform 0.15s cubic-bezier(0.34,1.56,0.64,1),
+                box-shadow 0.2s ease;
+  }
+  .btn-primary:hover  { opacity: 0.82; transform: translateY(-1px); }
+  .btn-primary:active { opacity: 1; transform: scale(0.96) translateY(0); }
+
+  .btn-ghost {
+    @apply px-3 py-2 rounded-lg cursor-pointer border-0 bg-transparent;
+    color: #888;
+    font-size: 13px;
+    transition: color 0.15s ease, background 0.15s ease, transform 0.15s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .btn-ghost:hover  { color: #e2e2e2; background: rgba(255,255,255,0.05); transform: translateY(-1px); }
+  .btn-ghost:active { transform: scale(0.97); }
+
+  .btn-icon {
+    @apply w-7 h-7 flex items-center justify-center rounded-md cursor-pointer;
+    color: #505050;
+    transition: color 0.15s ease, background 0.15s ease, transform 0.12s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .btn-icon:hover  { color: #888; background: rgba(255,255,255,0.05); transform: scale(1.1); }
+  .btn-icon:active { transform: scale(0.9); }
+
+  /* ── Inputs ── */
+  .field-input {
+    @apply bg-[#111] border border-border rounded-lg px-3 py-2
+           outline-none w-full;
+    color: #e2e2e2;
+    font-size: 13px;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+  }
+  .field-input::placeholder { color: #404040; }
+  .field-input:focus {
+    border-color: #2cb99a55;
+    box-shadow: 0 0 0 3px rgba(44,185,154,0.08);
+    background: #141414;
+  }
+
+  .field-label {
+    @apply font-medium uppercase tracking-wider mb-1 block;
+    color: #505050;
+    font-size: 11px;
+    transition: color 0.15s ease;
+  }
+
+  .tag {
+    @apply inline-flex items-center font-medium px-2 py-0.5 rounded-md;
+    font-size: 10px;
+  }
+
+  .section-title {
+    @apply font-semibold uppercase tracking-widest mb-3;
+    color: #505050;
+    font-size: 10px;
+  }
+}
+
+/* ── Ámbito page deep stagger ─────────────────────────────────────────────── */
+/* Anima automáticamente todos los elementos directos del contenido principal */
+.ambito-animate {
+  animation: fadeSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Header del ámbito */
+.ambito-animate > *:first-child {
+  animation: fadeSlideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 0.03s;
+}
+
+/* Contenido principal — cada sección directa */
+.ambito-animate > * > *:nth-child(1)  { animation: fadeSlideUp 0.38s cubic-bezier(0.16,1,0.3,1) both; animation-delay: 0.06s; }
+.ambito-animate > * > *:nth-child(2)  { animation: fadeSlideUp 0.38s cubic-bezier(0.16,1,0.3,1) both; animation-delay: 0.10s; }
+.ambito-animate > * > *:nth-child(3)  { animation: fadeSlideUp 0.38s cubic-bezier(0.16,1,0.3,1) both; animation-delay: 0.14s; }
+.ambito-animate > * > *:nth-child(4)  { animation: fadeSlideUp 0.38s cubic-bezier(0.16,1,0.3,1) both; animation-delay: 0.18s; }
+.ambito-animate > * > *:nth-child(5)  { animation: fadeSlideUp 0.38s cubic-bezier(0.16,1,0.3,1) both; animation-delay: 0.22s; }
+.ambito-animate > * > *:nth-child(6)  { animation: fadeSlideUp 0.38s cubic-bezier(0.16,1,0.3,1) both; animation-delay: 0.26s; }
+.ambito-animate > * > *:nth-child(7)  { animation: fadeSlideUp 0.38s cubic-bezier(0.16,1,0.3,1) both; animation-delay: 0.30s; }
+.ambito-animate > * > *:nth-child(8)  { animation: fadeSlideUp 0.38s cubic-bezier(0.16,1,0.3,1) both; animation-delay: 0.33s; }
+.ambito-animate > * > *:nth-child(9)  { animation: fadeSlideUp 0.38s cubic-bezier(0.16,1,0.3,1) both; animation-delay: 0.36s; }
+.ambito-animate > * > *:nth-child(10) { animation: fadeSlideUp 0.38s cubic-bezier(0.16,1,0.3,1) both; animation-delay: 0.39s; }
+.ambito-animate > * > *:nth-child(11) { animation: fadeSlideUp 0.38s cubic-bezier(0.16,1,0.3,1) both; animation-delay: 0.42s; }
+.ambito-animate > * > *:nth-child(12) { animation: fadeSlideUp 0.38s cubic-bezier(0.16,1,0.3,1) both; animation-delay: 0.44s; }
+
+/* ── Mobile drawer ─────────────────────────────────────────────────────────── */
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(100%); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ── Mobile responsive fixes ───────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  /* Grids de 2 cols → 1 col en móvil */
+  .mobile-stack { grid-template-columns: 1fr !important; }
+
+  /* Texto más legible en móvil */
+  .card { @apply p-3; }
+}
+
+/* ── NavLink active indicator ──────────────────────────────────────────────── */
+nav a {
+  transition: color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+}
+nav a:active { transform: scale(0.97); }
+
+/* ── Link transitions ──────────────────────────────────────────────────────── */
+a { transition: color 0.15s ease, opacity 0.15s ease; }
