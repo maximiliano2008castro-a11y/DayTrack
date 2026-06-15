@@ -34,7 +34,9 @@ function GlobalGymPill() {
   if (!session || sessionDone || pathname === '/ambito/gym') return null
 
   return (
-    <div className="fixed bottom-[72px] md:bottom-4 left-4 right-4 md:left-[220px] z-[60] rounded-2xl flex items-center gap-3 px-5 py-3"
+    <button
+      onClick={() => navigate('/ambito/gym')}
+      className="fixed bottom-[72px] md:bottom-4 left-4 right-4 md:left-[220px] z-[60] rounded-2xl flex items-center gap-3 px-5 py-3 w-[calc(100%-2rem)] md:w-auto active:scale-[0.98] transition-transform"
       style={{
         background: 'linear-gradient(135deg,#111,#0d0d0d)',
         border: `1px solid ${color}40`,
@@ -43,18 +45,17 @@ function GlobalGymPill() {
       <span className="font-mono text-[18px] font-bold shrink-0" style={{ color }}>
         {fmt(elapsed)}
       </span>
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 text-left">
         <p className="text-[13px] font-semibold text-hi truncate">{currentEx?.name}</p>
         <p className="text-[11px]" style={{ color }}>
           {currentEx?.muscle} · Serie {(session.setIdx ?? 0) + 1}/{currentEx?.totalSets}
         </p>
       </div>
-      <button onClick={() => navigate('/ambito/gym')}
-        className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold"
+      <span className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold"
         style={{ backgroundColor: `${color}20`, color }}>
         <ArrowsOut size={13}/> Volver
-      </button>
-    </div>
+      </span>
+    </button>
   )
 }
 
