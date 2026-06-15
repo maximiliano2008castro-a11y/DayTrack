@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { createContext, useContext, useState, useEffect, useRef, useMemo, useCallback, useSyncExternalStore } from 'react'
 import {
   getGymSessions, addGymSession, getLastWeightsForExercise,
   getGymRestSecs, saveGymRestSecs,
@@ -21,66 +21,47 @@ const MUSCLE_GROUPS = [
 const muscleColor = n => MUSCLE_GROUPS.find(m => m.name === n)?.color || '#888'
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 5)
 
-// ── Contexto estable: datos de sesión (no cambia cada segundo) ────────────────
+// ── Timer externo — FUERA de React state para no re-renderizar el árbol ───────
+let _timerState = { elapsed: 0, restTimer: null, totalRestTime: 0, alarmActive: false }
+let _timerSubs  = new Set()
+const getTimerSnapshot = () => _timerState
+const subTimer = cb => { _timerSubs.add(cb); return () => _timerSubs.delete(cb) }
+const setTimer = patch => { _timerState = { ..._timerState, ...patch }; _timerSubs.forEach(cb => cb()) }
+
+// Hook para componentes que muestran el timer — solo ELLOS se re-renderizan cada segundo
+export function useGymTimer() {
+  return useSyncExternalStore(subTimer, getTimerSnapshot)
+}
+
+// ── Contexto de sesión (estable, no cambia cada segundo) ──────────────────────
 const GymSessionContext = createContext(null)
-// ── Contexto de timers: cambia cada segundo, solo lo usan los componentes de timer
-const GymTimerContext   = createContext(null)
 
 export function GymSessionProvider({ children }) {
-  // ── Estado estable ──────────────────────────────────────────────────────────
-  const [session,       setSession]       = useState(() => getActiveGymSession()?.session       ?? null)
-  const [currentWeight, setCurrentWeight] = useState(() => getActiveGymSession()?.currentWeight ?? '')
+  const saved = getActiveGymSession()
+
+  const [session,       setSession]       = useState(() => saved?.session       ?? null)
+  const [currentWeight, setCurrentWeight] = useState(() => saved?.currentWeight ?? '')
   const [sessionDone,   setSessionDone]   = useState(false)
   const [showFeeling,   setShowFeeling]   = useState(false)
   const [flash,         setFlash]         = useState(false)
   const [prFlash,       setPrFlash]       = useState(null)
   const [history,       setHistory]       = useState(getGymSessions)
   const [restSecs,      setRestSecs]      = useState(getGymRestSecs)
-  const [alarmActive,   setAlarmActive]   = useState(false)
-  const alarmRef = useRef(null)
 
-  // ── Estado de timers (cambia cada segundo) ──────────────────────────────────
-  const [elapsed,       setElapsed]       = useState(() => getActiveGymSession()?.elapsed ?? 0)
-  const [restTimer,     setRestTimer]     = useState(null)
-  const [totalRestTime, setTotalRestTime] = useState(0)
+  // Refs para leer valores actuales del timer sin crear dependencias en useCallback
+  const sessionRef      = useRef(session)
+  const currentWeightRef = useRef(currentWeight)
+  const alarmIntervalRef = useRef(null)
 
-  // Persist to localStorage cada vez que cambia algo relevante
+  useEffect(() => { sessionRef.current = session }, [session])
+  useEffect(() => { currentWeightRef.current = currentWeight }, [currentWeight])
+
+  // Inicializa el estado externo del timer con el valor guardado
   useEffect(() => {
-    if (session && !sessionDone) {
-      saveActiveGymSession({ session, elapsed, currentWeight })
-    }
-  }, [session, elapsed, currentWeight, sessionDone])
+    if (saved?.elapsed) setTimer({ elapsed: saved.elapsed })
+  }, [])
 
-  // Elapsed timer
-  useEffect(() => {
-    if (!session || sessionDone) return
-    const id = setInterval(() => setElapsed(e => e + 1), 1000)
-    return () => clearInterval(id)
-  }, [session, sessionDone])
-
-  // Rest timer tick
-  useEffect(() => {
-    if (!restTimer) return
-    const id = setInterval(() => {
-      setRestTimer(r => {
-        if (!r) return null
-        if (r.phase === 'main')  return { ...r, remaining: r.remaining - 1 }
-        if (r.phase === 'extra') return { ...r, extraElapsed: r.extraElapsed + 1 }
-        return r
-      })
-    }, 1000)
-    return () => clearInterval(id)
-  }, [restTimer?.phase, !!restTimer])
-
-  // Countdown hits 0 → alarm + extra phase
-  useEffect(() => {
-    if (!restTimer || restTimer.phase !== 'main' || restTimer.remaining > 0) return
-    setTotalRestTime(t => t + restTimer.initial)
-    playAlarm()
-    setRestTimer(r => r ? { ...r, phase: 'extra', extraElapsed: 0 } : null)
-  }, [restTimer?.remaining])
-
-  const playAlarm = () => {
+  const playAlarm = useCallback(() => {
     const beep = () => {
       try {
         const ctx  = new AudioContext()
@@ -96,16 +77,54 @@ export function GymSessionProvider({ children }) {
       } catch(e) {}
     }
     beep()
-    alarmRef.current = setInterval(beep, 1800)
-    setAlarmActive(true)
-  }
+    alarmIntervalRef.current = setInterval(beep, 1800)
+    setTimer({ alarmActive: true })
+  }, [])
 
-  const silenceAlarm = () => {
-    if (alarmRef.current) { clearInterval(alarmRef.current); alarmRef.current = null }
-    setAlarmActive(false)
-  }
+  const silenceAlarm = useCallback(() => {
+    if (alarmIntervalRef.current) { clearInterval(alarmIntervalRef.current); alarmIntervalRef.current = null }
+    setTimer({ alarmActive: false })
+  }, [])
 
-  const startSession = rutina => {
+  // ── Elapsed + restTimer tick — todo en un solo interval, fuera de React state ──
+  useEffect(() => {
+    if (!session || sessionDone) return
+    const id = setInterval(() => {
+      const cur = getTimerSnapshot()
+      const newElapsed = cur.elapsed + 1
+
+      let newRestTimer = cur.restTimer
+      let newTotalRest = cur.totalRestTime
+
+      if (newRestTimer) {
+        if (newRestTimer.phase === 'main') {
+          const newRemaining = newRestTimer.remaining - 1
+          if (newRemaining <= 0) {
+            newTotalRest += newRestTimer.initial
+            playAlarm()
+            newRestTimer = { ...newRestTimer, remaining: 0, phase: 'extra', extraElapsed: 0 }
+          } else {
+            newRestTimer = { ...newRestTimer, remaining: newRemaining }
+          }
+        } else if (newRestTimer.phase === 'extra') {
+          newRestTimer = { ...newRestTimer, extraElapsed: newRestTimer.extraElapsed + 1 }
+        }
+      }
+
+      setTimer({ elapsed: newElapsed, restTimer: newRestTimer, totalRestTime: newTotalRest })
+
+      // Persist to localStorage sin tocar React state
+      saveActiveGymSession({
+        session: sessionRef.current,
+        elapsed: newElapsed,
+        currentWeight: currentWeightRef.current,
+      })
+    }, 1000)
+    return () => clearInterval(id)
+  }, [session?.rutinaId, sessionDone, playAlarm])
+
+  // ── Acciones ──────────────────────────────────────────────────────────────────
+  const startSession = useCallback(rutina => {
     const flat = []
     rutina.muscleGroups.forEach(g =>
       g.exercises.forEach(ex =>
@@ -113,27 +132,27 @@ export function GymSessionProvider({ children }) {
       )
     )
     if (!flat.length) return
+    silenceAlarm()
     clearActiveGymSession()
+    setTimer({ elapsed: 0, restTimer: null, totalRestTime: 0, alarmActive: false })
     setSession({ rutinaId:rutina.id, rutinaName:rutina.name, flat, logs:{}, exIdx:0, setIdx:0 })
-    setElapsed(0); setCurrentWeight(''); setSessionDone(false)
-    setRestTimer(null); setTotalRestTime(0)
-  }
+    setCurrentWeight(''); setSessionDone(false)
+  }, [silenceAlarm])
 
-  const advanceToNext = (nextExIdx, nextSetIdx) => {
+  const advanceToNext = useCallback((nextExIdx, nextSetIdx) => {
     setSession(s => {
       if (nextExIdx !== s.exIdx) setCurrentWeight('')
       return { ...s, exIdx: nextExIdx, setIdx: nextSetIdx }
     })
-  }
+  }, [])
 
-  const completeSet = () => {
-    if (!session) return
-    const { flat, logs, exIdx, setIdx } = session
-    const ex      = flat[exIdx]
-    const w       = Number(currentWeight) || 0
-    const newLogs = { ...logs }
-    if (!newLogs[ex.id]) newLogs[ex.id] = []
-    newLogs[ex.id] = [...newLogs[ex.id], { reps:ex.repsTarget, weight:w }]
+  const completeSet = useCallback(() => {
+    const s = sessionRef.current
+    if (!s) return
+    const { flat, logs, exIdx, setIdx } = s
+    const ex = flat[exIdx]
+    const w  = Number(currentWeightRef.current) || 0
+    const newLogs = { ...logs, [ex.id]: [...(logs[ex.id] || []), { reps:ex.repsTarget, weight:w }] }
 
     const prevMaxW = Math.max(0, ...getLastWeightsForExercise(ex.name))
     if (w > 0 && w > prevMaxW) {
@@ -146,106 +165,89 @@ export function GymSessionProvider({ children }) {
     let nextExIdx = exIdx, nextSetIdx = setIdx + 1
     if (nextSetIdx >= ex.totalSets) { nextExIdx = exIdx + 1; nextSetIdx = 0 }
 
-    setSession(s => ({ ...s, logs: newLogs }))
+    setSession(s2 => ({ ...s2, logs: newLogs }))
 
     if (nextExIdx >= flat.length) {
-      setSessionDone(true)
-      setShowFeeling(true)
+      setSessionDone(true); setShowFeeling(true)
       return
     }
 
-    setRestTimer({
-      phase: 'main', remaining: restSecs, initial: restSecs,
-      extraElapsed: 0, nextExIdx, nextSetIdx,
-    })
-  }
+    // Leer restSecs del store directamente para no crear dependencia
+    const secs = getGymRestSecs()
+    setTimer({ restTimer: { phase:'main', remaining:secs, initial:secs, extraElapsed:0, nextExIdx, nextSetIdx } })
+  }, [])
 
-  const skipRest = () => {
+  const skipRest = useCallback(() => {
+    const { restTimer, totalRestTime } = getTimerSnapshot()
     if (!restTimer) return
     silenceAlarm()
-    if (restTimer.phase === 'main') {
-      setTotalRestTime(t => t + (restTimer.initial - restTimer.remaining))
-    } else {
-      setTotalRestTime(t => t + restTimer.extraElapsed)
-    }
+    const added = restTimer.phase === 'main'
+      ? restTimer.initial - restTimer.remaining
+      : restTimer.extraElapsed
+    setTimer({ restTimer: null, totalRestTime: totalRestTime + added })
     advanceToNext(restTimer.nextExIdx, restTimer.nextSetIdx)
-    setRestTimer(null)
-  }
+  }, [silenceAlarm, advanceToNext])
 
-  const startExtraRest = () => {
+  const startExtraRest = useCallback(() => {
+    const { restTimer, totalRestTime } = getTimerSnapshot()
     if (!restTimer || restTimer.phase !== 'main') return
-    setTotalRestTime(t => t + (restTimer.initial - restTimer.remaining))
-    setRestTimer(r => ({ ...r, phase: 'extra', extraElapsed: 0 }))
-  }
+    const added = restTimer.initial - restTimer.remaining
+    setTimer({ restTimer: { ...restTimer, phase:'extra', extraElapsed:0 }, totalRestTime: totalRestTime + added })
+  }, [])
 
-  const saveFeelingAndFinish = (feeling) => {
+  const saveFeelingAndFinish = useCallback((feeling) => {
+    const s = sessionRef.current
+    const { elapsed, totalRestTime } = getTimerSnapshot()
     const savedSession = {
-      id:uid(), rutinaId:session.rutinaId, rutinaName:session.rutinaName,
+      id:uid(), rutinaId:s.rutinaId, rutinaName:s.rutinaName,
       date: (() => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` })(),
       duration: elapsed, restTime: totalRestTime, feeling,
-      exercises: session.flat.map(e => ({ id:e.id, name:e.name, muscle:e.muscle, sets:session.logs[e.id]||[] }))
+      exercises: s.flat.map(e => ({ id:e.id, name:e.name, muscle:e.muscle, sets:s.logs[e.id]||[] }))
     }
     addGymSession(savedSession)
     setHistory(getGymSessions())
     clearActiveGymSession()
     setShowFeeling(false)
-  }
+  }, [])
 
-  const abortSession = () => {
+  const abortSession = useCallback(() => {
     silenceAlarm()
     clearActiveGymSession()
-    setSession(null); setElapsed(0); setSessionDone(false)
+    setTimer({ elapsed:0, restTimer:null, totalRestTime:0, alarmActive:false })
+    setSession(null); setSessionDone(false)
     setShowFeeling(false); setCurrentWeight('')
-    setRestTimer(null); setTotalRestTime(0)
-  }
+  }, [silenceAlarm])
 
   const updateRestSecs = useCallback(secs => { setRestSecs(secs); saveGymRestSecs(secs) }, [])
-  const cbSilenceAlarm     = useCallback(silenceAlarm, [])
-  const cbStartSession     = useCallback(startSession, [])
-  const cbAdvanceToNext    = useCallback(advanceToNext, [])
-  const cbCompleteSet      = useCallback(completeSet, [session, currentWeight, restSecs])
-  const cbSkipRest         = useCallback(skipRest, [restTimer])
-  const cbStartExtraRest   = useCallback(startExtraRest, [restTimer])
-  const cbSaveFeelingAndFinish = useCallback(saveFeelingAndFinish, [session, totalRestTime])
-  const cbAbortSession     = useCallback(abortSession, [])
 
   const currentEx   = session ? session.flat[session.exIdx] : null
   const totalSeries = session ? session.flat.reduce((a,e)=>a+e.totalSets,0) : 0
   const doneSeries  = session ? Object.values(session.logs).reduce((a,arr)=>a+arr.length,0) : 0
 
-  // useMemo: la referencia solo cambia cuando cambia la sesión, NO cada segundo (elapsed no está aquí)
-  const sessionValue = useMemo(() => ({
+  // useMemo: referencia estable — no cambia cuando tick-ea el timer
+  const value = useMemo(() => ({
     session, currentWeight, setCurrentWeight,
     sessionDone, showFeeling, setShowFeeling,
     flash, prFlash, history, setHistory,
     restSecs, updateRestSecs,
-    alarmActive, silenceAlarm: cbSilenceAlarm,
+    silenceAlarm,
     currentEx, totalSeries, doneSeries,
-    startSession: cbStartSession,
-    completeSet: cbCompleteSet,
-    advanceToNext: cbAdvanceToNext,
-    skipRest: cbSkipRest,
-    startExtraRest: cbStartExtraRest,
-    saveFeelingAndFinish: cbSaveFeelingAndFinish,
-    abortSession: cbAbortSession,
+    startSession, completeSet, advanceToNext,
+    skipRest, startExtraRest, saveFeelingAndFinish, abortSession,
   }), [
     session, currentWeight, sessionDone, showFeeling,
-    flash, prFlash, history, restSecs, alarmActive,
+    flash, prFlash, history, restSecs,
     currentEx, totalSeries, doneSeries,
-    cbCompleteSet, cbSkipRest, cbStartExtraRest, cbSaveFeelingAndFinish,
+    updateRestSecs, silenceAlarm,
+    startSession, completeSet, advanceToNext,
+    skipRest, startExtraRest, saveFeelingAndFinish, abortSession,
   ])
 
-  // timerValue sí cambia cada segundo, pero solo lo consumen los subcomponentes de timer
-  const timerValue = useMemo(() => ({ elapsed, restTimer, totalRestTime }), [elapsed, restTimer, totalRestTime])
-
   return (
-    <GymSessionContext.Provider value={sessionValue}>
-      <GymTimerContext.Provider value={timerValue}>
-        {children}
-      </GymTimerContext.Provider>
+    <GymSessionContext.Provider value={value}>
+      {children}
     </GymSessionContext.Provider>
   )
 }
 
 export const useGymSession = () => useContext(GymSessionContext)
-export const useGymTimer   = () => useContext(GymTimerContext)
