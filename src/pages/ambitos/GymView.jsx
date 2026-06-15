@@ -11,7 +11,7 @@ import {
   getGymUnit, saveGymUnit, getLastWeightsForExercise,
 } from '../../store'
 import GymCalendario from './GymCalendario'
-import { useGymSession, useGymTimer } from '../../context/GymSessionContext'
+import { useGymSession, useGymTimer, useGymMinimized, setGymMinimized } from '../../context/GymSessionContext'
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 const MUSCLE_GROUPS = [
@@ -772,10 +772,11 @@ export default function GymView({ ambito }) {
   }
 
   // Session — datos estables (no re-renderiza cada segundo)
+  const sessionMinimized = useGymMinimized()
+
   const {
     session, currentWeight, setCurrentWeight,
     sessionDone, showFeeling, setShowFeeling,
-    sessionMinimized, setSessionMinimized,
     flash, prFlash, history, setHistory,
     restSecs, updateRestSecs,
     alarmActive, silenceAlarm,
@@ -1106,7 +1107,7 @@ export default function GymView({ ambito }) {
                 <p className="text-[11px] text-lo">{[...new Set(session.flat.map(e=>e.muscle))].join(' · ')}</p>
               </div>
               <div className="flex items-center gap-2">
-                <button onClick={() => setSessionMinimized(true)}
+                <button onClick={() => setGymMinimized(true)}
                   className="p-2 rounded-xl text-lo hover:text-mid hover:bg-white/5 transition-all">
                   <ArrowsIn size={15}/>
                 </button>
@@ -1219,7 +1220,7 @@ export default function GymView({ ambito }) {
           {/* Pill minimizada */}
           <div className="transition-all duration-500"
             style={{ opacity:sessionMinimized?1:0, pointerEvents:sessionMinimized?'all':'none', transform:sessionMinimized?'translateY(0)':'translateY(80px)' }}>
-            <SessionPillFromContext currentEx={currentEx} setIdx={session.setIdx} color={ambito.color} onExpand={() => setSessionMinimized(false)}/>
+            <SessionPillFromContext currentEx={currentEx} setIdx={session.setIdx} color={ambito.color} onExpand={() => setGymMinimized(false)}/>
           </div>
         </>,
         document.body

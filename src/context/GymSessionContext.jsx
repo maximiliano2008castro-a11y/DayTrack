@@ -28,6 +28,18 @@ const getTimerSnapshot = () => _timerState
 const subTimer = cb => { _timerSubs.add(cb); return () => _timerSubs.delete(cb) }
 const setTimer = patch => { _timerState = { ..._timerState, ...patch }; _timerSubs.forEach(cb => cb()) }
 
+// ── Estado de minimizado — FUERA de React state para no interrumpir transiciones CSS ──
+let _minimized = false
+let _minSubs   = new Set()
+const getMinSnapshot = () => _minimized
+const subMin = cb => { _minSubs.add(cb); return () => _minSubs.delete(cb) }
+export const setGymMinimized = val => { _minimized = val; _minSubs.forEach(cb => cb()) }
+
+// Hook para componentes que leen el estado minimizado
+export function useGymMinimized() {
+  return useSyncExternalStore(subMin, getMinSnapshot)
+}
+
 // Hook para componentes que muestran el timer — solo ELLOS se re-renderizan cada segundo
 export function useGymTimer() {
   return useSyncExternalStore(subTimer, getTimerSnapshot)
@@ -39,12 +51,11 @@ const GymSessionContext = createContext(null)
 export function GymSessionProvider({ children }) {
   const saved = getActiveGymSession()
 
-  const [session,          setSession]          = useState(() => saved?.session       ?? null)
-  const [currentWeight,    setCurrentWeight]    = useState(() => saved?.currentWeight ?? '')
-  const [sessionDone,      setSessionDone]      = useState(false)
-  const [showFeeling,      setShowFeeling]      = useState(false)
-  const [sessionMinimized, setSessionMinimized] = useState(false)
-  const [flash,            setFlash]            = useState(false)
+  const [session,       setSession]       = useState(() => saved?.session       ?? null)
+  const [currentWeight, setCurrentWeight] = useState(() => saved?.currentWeight ?? '')
+  const [sessionDone,   setSessionDone]   = useState(false)
+  const [showFeeling,   setShowFeeling]   = useState(false)
+  const [flash,         setFlash]         = useState(false)
   const [prFlash,          setPrFlash]          = useState(null)
   const [history,          setHistory]          = useState(getGymSessions)
   const [restSecs,         setRestSecs]         = useState(getGymRestSecs)
@@ -137,7 +148,7 @@ export function GymSessionProvider({ children }) {
     clearActiveGymSession()
     setTimer({ elapsed: 0, restTimer: null, totalRestTime: 0, alarmActive: false })
     setSession({ rutinaId:rutina.id, rutinaName:rutina.name, flat, logs:{}, exIdx:0, setIdx:0 })
-    setCurrentWeight(''); setSessionDone(false); setSessionMinimized(false)
+    setCurrentWeight(''); setSessionDone(false); setGymMinimized(false)
   }, [silenceAlarm])
 
   const advanceToNext = useCallback((nextExIdx, nextSetIdx) => {
@@ -216,7 +227,7 @@ export function GymSessionProvider({ children }) {
     clearActiveGymSession()
     setTimer({ elapsed:0, restTimer:null, totalRestTime:0, alarmActive:false })
     setSession(null); setSessionDone(false)
-    setShowFeeling(false); setCurrentWeight(''); setSessionMinimized(false)
+    setShowFeeling(false); setCurrentWeight(''); setGymMinimized(false)
   }, [silenceAlarm])
 
   const updateRestSecs = useCallback(secs => { setRestSecs(secs); saveGymRestSecs(secs) }, [])
@@ -229,7 +240,6 @@ export function GymSessionProvider({ children }) {
   const value = useMemo(() => ({
     session, currentWeight, setCurrentWeight,
     sessionDone, showFeeling, setShowFeeling,
-    sessionMinimized, setSessionMinimized,
     flash, prFlash, history, setHistory,
     restSecs, updateRestSecs,
     silenceAlarm,
@@ -237,7 +247,7 @@ export function GymSessionProvider({ children }) {
     startSession, completeSet, advanceToNext,
     skipRest, startExtraRest, saveFeelingAndFinish, abortSession,
   }), [
-    session, currentWeight, sessionDone, showFeeling, sessionMinimized,
+    session, currentWeight, sessionDone, showFeeling,
     flash, prFlash, history, restSecs,
     currentEx, totalSeries, doneSeries,
     updateRestSecs, silenceAlarm,
