@@ -874,7 +874,7 @@ export default function GymView({ ambito }) {
 
         {/* ── SEMANA ─────────────────────────────────────────────────────────── */}
         {tab === 'Semana' && (
-          <div>
+          <div className="tab-in">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-[15px] font-semibold text-hi">Mi semana</h2>
@@ -919,7 +919,7 @@ export default function GymView({ ambito }) {
 
         {/* ── RUTINAS ────────────────────────────────────────────────────────── */}
         {tab === 'Rutinas' && (
-          editingRutina ? (
+          <div className="tab-in">{editingRutina ? (
             <RutinaDetail
               rutina={editingRutina}
               onChange={updateRutina}
@@ -985,24 +985,24 @@ export default function GymView({ ambito }) {
                 })}
               </div>
             </>
-          )
+          )}</div>
         )}
 
         {/* ── CALENDARIO ─────────────────────────────────────────────────────── */}
         {tab === 'Calendario' && (
-          <GymCalendario
+          <div className="tab-in"><GymCalendario
             rutinas={rutinas}
             weekPlan={weekPlan}
             sessions={history}
             unit={unit}
             ambito={ambito}
             onStart={startSession}
-          />
+          /></div>
         )}
 
         {/* ── HISTORIAL ──────────────────────────────────────────────────────── */}
         {tab === 'Historial' && (
-          <div>
+          <div className="tab-in">
             <h2 className="text-[15px] font-semibold text-hi mb-4">Historial</h2>
             {history.length === 0 && <div className="card py-10 text-center text-lo text-[13px]">Aún no hay sesiones.</div>}
             <div className="space-y-2">
@@ -1044,9 +1044,9 @@ export default function GymView({ ambito }) {
 
       {/* ── Modal: Asignar día ────────────────────────────────────────────────── */}
       {assignDay && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm"
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm modal-backdrop"
           onClick={() => setAssignDay(null)}>
-          <div className="bg-card border border-border-2 rounded-2xl p-5 w-[360px] shadow-2xl"
+          <div className="bg-card border border-border-2 rounded-2xl p-5 w-[360px] shadow-2xl modal-dialog"
             onClick={e => e.stopPropagation()}>
             <h3 className="font-semibold text-hi mb-1 text-[15px]">
               {WEEK_DAYS.find(d=>d.key===assignDay)?.label}
@@ -1102,9 +1102,9 @@ export default function GymView({ ambito }) {
 
       {/* ── Modal: Nueva rutina ───────────────────────────────────────────────── */}
       {showNewRutina && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm"
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm modal-backdrop"
           onClick={() => setShowNewRutina(false)}>
-          <div className="bg-card border border-border-2 rounded-2xl p-6 w-[360px] shadow-2xl"
+          <div className="bg-card border border-border-2 rounded-2xl p-6 w-[360px] shadow-2xl modal-dialog"
             onClick={e => e.stopPropagation()}>
             <h3 className="font-semibold text-hi mb-4 text-[15px]">Nueva rutina</h3>
             <span className="field-label">Nombre</span>
@@ -1426,9 +1426,9 @@ export default function GymView({ ambito }) {
             <SessionCompleteFromContext session={session} unit={unit} onClose={abortSession}/>
           )}
           {showRestConfig && (
-            <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm"
+            <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm modal-backdrop"
               onClick={() => setShowRestConfig(false)}>
-              <div className="bg-card border border-border-2 rounded-2xl p-6 w-[320px] shadow-2xl"
+              <div className="bg-card border border-border-2 rounded-2xl p-6 w-[320px] shadow-2xl modal-dialog"
                 onClick={e => e.stopPropagation()}>
                 <h3 className="font-semibold text-hi mb-1 text-[15px]">Tiempo de descanso</h3>
                 <p className="text-[12px] text-lo mb-4">Entre series</p>
@@ -1463,9 +1463,9 @@ export default function GymView({ ambito }) {
             </div>
           )}
           {showAbortConfirm && (
-            <div className="fixed inset-0 bg-black/80 z-[80] flex items-center justify-center backdrop-blur-sm px-6"
+            <div className="fixed inset-0 bg-black/80 z-[80] flex items-center justify-center backdrop-blur-sm px-6 modal-backdrop"
               onClick={() => setShowAbortConfirm(false)}>
-              <div className="bg-card border border-border-2 rounded-2xl p-6 w-full max-w-sm shadow-2xl"
+              <div className="bg-card border border-border-2 rounded-2xl p-6 w-full max-w-sm shadow-2xl modal-dialog"
                 onClick={e => e.stopPropagation()}>
                 <h3 className="text-[17px] font-black text-hi mb-1">¿Abandonar sesión?</h3>
                 <p className="text-[13px] text-lo mb-6">Se perderá el progreso del entreno actual.</p>

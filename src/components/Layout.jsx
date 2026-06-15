@@ -36,7 +36,7 @@ function GlobalGymPill() {
   return (
     <button
       onClick={() => navigate('/ambito/gym')}
-      className="fixed bottom-[72px] md:bottom-4 left-4 right-4 md:left-[220px] z-[60] rounded-2xl flex items-center gap-3 px-5 py-3 w-[calc(100%-2rem)] md:w-auto active:scale-[0.98] transition-transform"
+      className="fixed bottom-[72px] md:bottom-4 left-4 right-4 md:left-[220px] z-[60] rounded-2xl flex items-center gap-3 px-5 py-3 w-[calc(100%-2rem)] md:w-auto active:scale-[0.98] transition-transform pill-up"
       style={{
         background: 'linear-gradient(135deg,#111,#0d0d0d)',
         border: `1px solid ${color}40`,
@@ -90,14 +90,21 @@ export default function Layout({ children }) {
         </div>
 
         {/* Nav principal */}
-        <nav className="flex flex-col gap-0.5 p-2">
+        <nav className="flex flex-col gap-0.5 p-2 sidebar-nav">
           {mainNav.map(({ to, icon: Icon, label }) => (
             <NavLink key={to} to={to} end={to === '/'}
               className={({ isActive }) =>
                 `flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-all ${
                   isActive ? 'bg-accent/12 text-accent font-medium' : 'text-mid hover:text-hi hover:bg-white/4'
                 }`}>
-              {({ isActive }) => <><Icon size={15} weight={isActive?'fill':'regular'}/>{label}</>}
+              {({ isActive }) => (
+                <>
+                  <span className={isActive ? 'nav-icon-active' : ''} key={isActive ? 'a' : 'i'}>
+                    <Icon size={15} weight={isActive?'fill':'regular'}/>
+                  </span>
+                  {label}
+                </>
+              )}
             </NavLink>
           ))}
         </nav>
@@ -266,7 +273,9 @@ export default function Layout({ children }) {
               }`}>
             {({ isActive }) => (
               <>
-                <Icon size={20} weight={isActive?'fill':'regular'}/>
+                <span className={isActive ? 'nav-icon-active inline-flex' : 'inline-flex'} key={isActive ? 'a' : 'i'}>
+                  <Icon size={20} weight={isActive?'fill':'regular'}/>
+                </span>
                 <span className="text-[10px] font-medium">{label}</span>
               </>
             )}

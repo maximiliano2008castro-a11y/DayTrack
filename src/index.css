@@ -223,11 +223,73 @@ select option { background: #1a1a1a; }
 .ambito-animate > * > *:nth-child(11) { animation: fadeSlideUp 0.38s cubic-bezier(0.16,1,0.3,1) both; animation-delay: 0.42s; }
 .ambito-animate > * > *:nth-child(12) { animation: fadeSlideUp 0.38s cubic-bezier(0.16,1,0.3,1) both; animation-delay: 0.44s; }
 
-/* ── Mobile drawer ─────────────────────────────────────────────────────────── */
+/* ── Additional keyframes ──────────────────────────────────────────────────── */
 @keyframes slideInRight {
   from { opacity: 0; transform: translateX(100%); }
   to   { opacity: 1; transform: translateX(0); }
 }
+@keyframes popIn {
+  0%   { opacity: 0; transform: scale(0.85) translateY(6px); }
+  70%  { transform: scale(1.04) translateY(-1px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes iconBounce {
+  0%   { transform: scale(1) translateY(0); }
+  35%  { transform: scale(0.82) translateY(2px); }
+  65%  { transform: scale(1.18) translateY(-3px); }
+  85%  { transform: scale(0.94) translateY(0); }
+  100% { transform: scale(1) translateY(0); }
+}
+@keyframes slideTabIn {
+  from { opacity: 0; transform: translateX(12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes pillSlideUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes ripple {
+  from { transform: scale(0); opacity: 0.35; }
+  to   { transform: scale(2.5); opacity: 0; }
+}
+
+/* ── Global micro-interactions ─────────────────────────────────────────────── */
+/* Quita el highlight azul en móvil */
+* { -webkit-tap-highlight-color: transparent; }
+
+/* Todo botón da feedback al toque — salvo los que ya tienen su propio active */
+button:not(:disabled):not(.btn-primary):not(.btn-ghost):not(.btn-icon):active {
+  transform: scale(0.95);
+  transition: transform 0.1s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+/* Cards clicables */
+.card[role="button"]:active,
+button.card:active { transform: scale(0.98); }
+
+/* Pop-in para elementos que aparecen dinámicamente */
+.pop-in  { animation: popIn  0.3s cubic-bezier(0.34,1.56,0.64,1) both; }
+
+/* Tab content fade-slide */
+.tab-in  { animation: slideTabIn 0.22s cubic-bezier(0.16,1,0.3,1) both; }
+
+/* Pill deslizante */
+.pill-up { animation: pillSlideUp 0.35s cubic-bezier(0.16,1,0.3,1) both; }
+
+/* Bottom nav icon bounce al activarse */
+.nav-icon-active { animation: iconBounce 0.45s cubic-bezier(0.34,1.56,0.64,1) both; }
+
+/* Sidebar items stagger */
+.sidebar-nav > * {
+  animation: fadeSlideUp 0.35s cubic-bezier(0.16,1,0.3,1) both;
+}
+.sidebar-nav > *:nth-child(1) { animation-delay: 0.03s; }
+.sidebar-nav > *:nth-child(2) { animation-delay: 0.07s; }
+.sidebar-nav > *:nth-child(3) { animation-delay: 0.10s; }
+.sidebar-nav > *:nth-child(4) { animation-delay: 0.13s; }
+.sidebar-nav > *:nth-child(5) { animation-delay: 0.16s; }
+.sidebar-nav > *:nth-child(6) { animation-delay: 0.19s; }
+.sidebar-nav > *:nth-child(7) { animation-delay: 0.22s; }
 
 /* ── Mobile responsive fixes ───────────────────────────────────────────────── */
 @media (max-width: 767px) {

@@ -115,7 +115,7 @@ function AnimatedRoutes({ remoteRev = 0 }) {
   const location = useLocation()
   return (
     <Routes location={location} key={`${location.key}-${remoteRev}`}>
-      <Route path="/"           element={<Dashboard />} />
+      <Route path="/"           element={<div className="ambito-animate"><Dashboard /></div>} />
       <Route path="/ambito/:id" element={<AmbitoPage />} />
       <Route path="/habitos"    element={<div className="ambito-animate"><Habitos /></div>} />
       <Route path="/objetivos"  element={<div className="ambito-animate"><Objetivos /></div>} />
