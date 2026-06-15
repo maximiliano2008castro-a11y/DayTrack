@@ -730,9 +730,10 @@ export default function GymView({ ambito }) {
     saveFeelingAndFinish, abortSession,
   } = useGymSession()
 
-  const [sessionMinimized, setSessionMinimized] = useState(false)
-  const [selectedSession,  setSelectedSession]  = useState(null)
-  const [showRestConfig,   setShowRestConfig]   = useState(false)
+  const [sessionMinimized,  setSessionMinimized]  = useState(false)
+  const [selectedSession,   setSelectedSession]   = useState(null)
+  const [showRestConfig,    setShowRestConfig]    = useState(false)
+  const [showAbortConfirm,  setShowAbortConfirm]  = useState(false)
 
   // ── Week plan helpers ───────────────────────────────────────────────────────
   const persistPlan = p => { setWeekPlan(p); saveWeekPlan(p) }
@@ -1052,7 +1053,7 @@ export default function GymView({ ambito }) {
                   className="p-2 rounded-xl text-lo hover:text-mid hover:bg-white/5 transition-all">
                   <ArrowsIn size={15}/>
                 </button>
-                <button onClick={() => { if(confirm('¿Abandonar la sesión?')) abortSession() }}
+                <button onClick={() => setShowAbortConfirm(true)}
                   className="p-2 rounded-xl text-lo hover:text-red-400 hover:bg-red-500/10 transition-all">
                   <X size={15}/>
                 </button>
@@ -1408,6 +1409,30 @@ export default function GymView({ ambito }) {
               <p className="text-[11px] text-lo mt-1">Escribe los segundos y presiona Enter</p>
             </div>
             <button className="btn-primary w-full" onClick={() => setShowRestConfig(false)}>Listo</button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal: Confirmar abandono de sesión ──────────────────────────────── */}
+      {showAbortConfirm && (
+        <div className="fixed inset-0 bg-black/80 z-[80] flex items-center justify-center backdrop-blur-sm px-6"
+          onClick={() => setShowAbortConfirm(false)}>
+          <div className="bg-card border border-border-2 rounded-2xl p-6 w-full max-w-sm shadow-2xl"
+            onClick={e => e.stopPropagation()}>
+            <h3 className="text-[17px] font-black text-hi mb-1">¿Abandonar sesión?</h3>
+            <p className="text-[13px] text-lo mb-6">Se perderá el progreso del entreno actual.</p>
+            <div className="flex gap-3">
+              <button className="flex-1 py-3 rounded-xl text-[13px] font-semibold text-mid"
+                style={{ backgroundColor:'#1a1a1a', border:'1px solid #2a2a2a' }}
+                onClick={() => setShowAbortConfirm(false)}>
+                Cancelar
+              </button>
+              <button className="flex-1 py-3 rounded-xl text-[13px] font-bold text-white"
+                style={{ backgroundColor:'#e05c5c' }}
+                onClick={() => { setShowAbortConfirm(false); abortSession() }}>
+                Abandonar
+              </button>
+            </div>
           </div>
         </div>
       )}
