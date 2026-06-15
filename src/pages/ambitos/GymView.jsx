@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+﻿import { useState, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import {
   Plus, X, ArrowLeft, Barbell, Play, Trash, Lightning,
@@ -11,7 +11,7 @@ import {
   getGymUnit, saveGymUnit, getLastWeightsForExercise,
 } from '../../store'
 import GymCalendario from './GymCalendario'
-import { useGymSession, useGymTimer, useGymMinimized, setGymMinimized } from '../../context/GymSessionContext'
+import { useGymSession, useGymTimer, setGymMinimized } from '../../context/GymSessionContext'
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 const MUSCLE_GROUPS = [
@@ -741,32 +741,6 @@ function SessionPillFromContext({ currentEx, setIdx, color, onExpand }) {
   return <SessionPill currentEx={currentEx} setIdx={setIdx} elapsed={elapsed} color={color} onExpand={onExpand}/>
 }
 
-// Aísla la visibilidad del overlay — solo este componente se re-renderiza al minimizar
-function OverlayVisibility({ children }) {
-  const minimized = useGymMinimized()
-  return (
-    <div className="fixed inset-0 md:left-52 z-[60] flex flex-col bg-bg"
-      style={{
-        transition: 'opacity 0.5s ease, transform 0.5s ease',
-        opacity: minimized ? 0 : 1,
-        pointerEvents: minimized ? 'none' : 'all',
-        transform: minimized ? 'scale(0.96) translateY(20px)' : 'scale(1) translateY(0)',
-      }}>
-      {children}
-    </div>
-  )
-}
-
-// Aísla la pill minimizada — solo este componente se re-renderiza al minimizar
-function MinimizedPillWrapper({ currentEx, setIdx, color }) {
-  const minimized = useGymMinimized()
-  return (
-    <div style={{ opacity: minimized ? 1 : 0, pointerEvents: minimized ? 'all' : 'none',
-      transform: minimized ? 'translateY(0)' : 'translateY(80px)', transition: 'opacity 0.5s ease, transform 0.5s ease' }}>
-      <SessionPillFromContext currentEx={currentEx} setIdx={setIdx} color={color} onExpand={() => setGymMinimized(false)}/>
-    </div>
-  )
-}
 
 function FeelingScreenFromContext({ session, unit, onSubmit }) {
   const { elapsed } = useGymTimer()
@@ -808,9 +782,41 @@ export default function GymView({ ambito }) {
     startSession, completeSet, skipRest, startExtraRest,
     saveFeelingAndFinish, abortSession,
   } = useGymSession()
-  const [selectedSession,   setSelectedSession]   = useState(null)
-  const [showRestConfig,    setShowRestConfig]    = useState(false)
-  const [showAbortConfirm,  setShowAbortConfirm]  = useState(false)
+  const [selectedSession,  setSelectedSession]  = useState(null)
+  const [showRestConfig,   setShowRestConfig]   = useState(false)
+  const [showAbortConfirm, setShowAbortConfirm] = useState(false)
+
+  // Refs para manipular el DOM directamente — sin re-renders de React al minimizar
+  const overlayRef = useRef(null)
+  const pillRef    = useRef(null)
+
+  const handleMinimize = useCallback(() => {
+    if (overlayRef.current) {
+      overlayRef.current.style.opacity = '0'
+      overlayRef.current.style.pointerEvents = 'none'
+      overlayRef.current.style.transform = 'scale(0.96) translateY(20px)'
+    }
+    if (pillRef.current) {
+      pillRef.current.style.opacity = '1'
+      pillRef.current.style.pointerEvents = 'all'
+      pillRef.current.style.transform = 'translateY(0)'
+    }
+    setGymMinimized(true)
+  }, [])
+
+  const handleExpand = useCallback(() => {
+    if (overlayRef.current) {
+      overlayRef.current.style.opacity = '1'
+      overlayRef.current.style.pointerEvents = 'all'
+      overlayRef.current.style.transform = 'scale(1) translateY(0)'
+    }
+    if (pillRef.current) {
+      pillRef.current.style.opacity = '0'
+      pillRef.current.style.pointerEvents = 'none'
+      pillRef.current.style.transform = 'translateY(80px)'
+    }
+    setGymMinimized(false)
+  }, [])
 
   // ── Week plan helpers ───────────────────────────────────────────────────────
   const persistPlan = p => { setWeekPlan(p); saveWeekPlan(p) }
@@ -1116,7 +1122,8 @@ export default function GymView({ ambito }) {
       {/* ── Sesión activa: portal fuera de ambito-animate para evitar CSS conflicts ── */}
       {session && !sessionDone && createPortal(
         <>
-          <OverlayVisibility>
+          <div ref={overlayRef} className="fixed inset-0 md:left-52 z-[60] flex flex-col bg-bg"
+            style={{ transition: 'opacity 0.5s ease, transform 0.5s ease', opacity: 1, pointerEvents: 'all', transform: 'scale(1) translateY(0)' }}>
 
             {/* Top bar */}
             <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-border shrink-0">
@@ -1125,7 +1132,7 @@ export default function GymView({ ambito }) {
                 <p className="text-[11px] text-lo">{[...new Set(session.flat.map(e=>e.muscle))].join(' · ')}</p>
               </div>
               <div className="flex items-center gap-2">
-                <button onClick={() => setGymMinimized(true)}
+                <button onClick={handleMinimize}
                   className="p-2 rounded-xl text-lo hover:text-mid hover:bg-white/5 transition-all">
                   <ArrowsIn size={15}/>
                 </button>
@@ -1221,7 +1228,7 @@ export default function GymView({ ambito }) {
                 )
               })()}
             </div>
-          </OverlayVisibility>
+          </div>
 
           {/* PR flash banner */}
           {prFlash && (
@@ -1236,7 +1243,9 @@ export default function GymView({ ambito }) {
           )}
 
           {/* Pill minimizada */}
-          <MinimizedPillWrapper currentEx={currentEx} setIdx={session.setIdx} color={ambito.color}/>
+          <div ref={pillRef} style={{ opacity: 0, pointerEvents: 'none', transform: 'translateY(80px)', transition: 'opacity 0.5s ease, transform 0.5s ease' }}>
+            <SessionPillFromContext currentEx={currentEx} setIdx={session.setIdx} color={ambito.color} onExpand={handleExpand}/>
+          </div>
         </>,
         document.body
       )}

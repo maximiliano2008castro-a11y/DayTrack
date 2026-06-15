@@ -7,7 +7,7 @@ import {
 import { AMBITOS, getSelectedAmbitos } from '../store'
 import { getAmbitoIcon } from '../ambitoIcons'
 import { useAuth } from '../context/AuthContext'
-import { useGymSession, useGymTimer, useGymMinimized, setGymMinimized } from '../context/GymSessionContext'
+import { useGymSession, useGymTimer, setGymMinimized } from '../context/GymSessionContext'
 
 const mainNav = [
   { to: '/',          icon: SquaresFour, label: 'Inicio'    },
@@ -26,15 +26,12 @@ const fmt = s => {
 function GlobalGymPill() {
   const { session, sessionDone, currentEx } = useGymSession()
   const { elapsed } = useGymTimer()
-  const minimized = useGymMinimized()
   const navigate  = useNavigate()
   const { pathname } = useLocation()
   const gymAmbito = AMBITOS.find(a => a.id === 'gym')
   const color     = gymAmbito?.color ?? '#e05c5c'
 
-  // Muestra en otras páginas, O en gym cuando está minimizado
-  if (!session || sessionDone) return null
-  if (pathname === '/ambito/gym' && !minimized) return null
+  if (!session || sessionDone || pathname === '/ambito/gym') return null
 
   return (
     <div className="fixed bottom-[72px] md:bottom-4 left-4 right-4 md:left-[220px] z-[60] rounded-2xl flex items-center gap-3 px-5 py-3"
@@ -52,15 +49,7 @@ function GlobalGymPill() {
           {currentEx?.muscle} · Serie {(session.setIdx ?? 0) + 1}/{currentEx?.totalSets}
         </p>
       </div>
-      <button
-        onClick={() => {
-          if (pathname === '/ambito/gym') {
-            setGymMinimized(false)
-          } else {
-            navigate('/ambito/gym')
-            setGymMinimized(false)
-          }
-        }}
+      <button onClick={() => navigate('/ambito/gym')}
         className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold"
         style={{ backgroundColor: `${color}20`, color }}>
         <ArrowsOut size={13}/> Volver
