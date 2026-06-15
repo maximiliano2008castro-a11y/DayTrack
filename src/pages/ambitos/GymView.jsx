@@ -1,4 +1,5 @@
 ﻿import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Plus, X, ArrowLeft, Barbell, Play, Trash, Lightning,
   ArrowsIn, ArrowsOut, CheckFat, Trophy, Moon, PencilSimple,
@@ -1089,12 +1090,11 @@ export default function GymView({ ambito }) {
         </div>
       )}
 
-      {/* ── Sesión activa: pantalla completa ─────────────────────────────────── */}
-      {session && !sessionDone && (
+      {/* ── Sesión activa: portal fuera de ambito-animate para evitar CSS conflicts ── */}
+      {session && !sessionDone && createPortal(
         <>
           <div className="fixed inset-0 z-[60] flex flex-col bg-bg"
             style={{
-              animation: 'none',
               transition: 'opacity 0.5s ease, transform 0.5s ease',
               opacity: sessionMinimized ? 0 : 1,
               pointerEvents: sessionMinimized ? 'none' : 'all',
@@ -1223,7 +1223,8 @@ export default function GymView({ ambito }) {
             style={{ opacity:sessionMinimized?1:0, pointerEvents:sessionMinimized?'all':'none', transform:sessionMinimized?'translateY(0)':'translateY(80px)' }}>
             <SessionPillFromContext currentEx={currentEx} setIdx={session.setIdx} color={ambito.color} onExpand={() => setSessionMinimized(false)}/>
           </div>
-        </>
+        </>,
+        document.body
       )}
 
       {/* ── Modal: Detalle de sesión ─────────────────────────────────────────── */}
@@ -1388,85 +1389,81 @@ export default function GymView({ ambito }) {
         )
       })()}
 
-      {/* Rest timer overlay */}
-      <RestOverlayFromContext
-        session={session} unit={unit} color={ambito.color}
-        alarmActive={alarmActive} silenceAlarm={silenceAlarm}
-        skipRest={skipRest} startExtraRest={startExtraRest}
-      />
-
-      {/* ¿Cómo te sentiste? */}
-      {session && sessionDone && showFeeling && (
-        <FeelingScreenFromContext session={session} unit={unit} onSubmit={saveFeelingAndFinish}/>
-      )}
-
-      {/* Sesión completa */}
-      {session && sessionDone && !showFeeling && (
-        <SessionCompleteFromContext session={session} unit={unit} onClose={abortSession}/>
-      )}
-
-      {/* Modal: config descanso */}
-      {showRestConfig && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm"
-          onClick={() => setShowRestConfig(false)}>
-          <div className="bg-card border border-border-2 rounded-2xl p-6 w-[320px] shadow-2xl"
-            onClick={e => e.stopPropagation()}>
-            <h3 className="font-semibold text-hi mb-1 text-[15px]">Tiempo de descanso</h3>
-            <p className="text-[12px] text-lo mb-4">Entre series</p>
-            <div className="grid grid-cols-4 gap-2 mb-4">
-              {[30,60,90,120,150,180,240,300].map(s => (
-                <button key={s} onClick={() => updateRestSecs(s)}
-                  className="py-2.5 rounded-xl text-[12px] font-bold transition-all"
-                  style={restSecs===s
-                    ? { backgroundColor:ambito.color, color:'#000' }
-                    : { backgroundColor:'#111', border:'1px solid #242424', color:'#666' }}>
-                  {s < 60 ? `${s}s` : s%60===0 ? `${s/60}min` : `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`}
-                </button>
-              ))}
-            </div>
-            {/* Custom time */}
-            <div className="mb-4">
-              <p className="field-label mb-1">Tiempo personalizado</p>
-              <div className="flex gap-2">
-                <input type="number" min={5} max={600} placeholder="ej: 75"
-                  className="field-input flex-1 text-center"
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') {
-                      const v = Math.max(5, Math.min(600, Number(e.target.value)))
-                      if (v) { updateRestSecs(v); e.target.value = '' }
-                    }
-                  }}/>
-                <span className="flex items-center text-[12px] text-lo">seg</span>
+      {/* Overlays de sesión — portal fuera de ambito-animate */}
+      {createPortal(
+        <>
+          <RestOverlayFromContext
+            session={session} unit={unit} color={ambito.color}
+            alarmActive={alarmActive} silenceAlarm={silenceAlarm}
+            skipRest={skipRest} startExtraRest={startExtraRest}
+          />
+          {session && sessionDone && showFeeling && (
+            <FeelingScreenFromContext session={session} unit={unit} onSubmit={saveFeelingAndFinish}/>
+          )}
+          {session && sessionDone && !showFeeling && (
+            <SessionCompleteFromContext session={session} unit={unit} onClose={abortSession}/>
+          )}
+          {showRestConfig && (
+            <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm"
+              onClick={() => setShowRestConfig(false)}>
+              <div className="bg-card border border-border-2 rounded-2xl p-6 w-[320px] shadow-2xl"
+                onClick={e => e.stopPropagation()}>
+                <h3 className="font-semibold text-hi mb-1 text-[15px]">Tiempo de descanso</h3>
+                <p className="text-[12px] text-lo mb-4">Entre series</p>
+                <div className="grid grid-cols-4 gap-2 mb-4">
+                  {[30,60,90,120,150,180,240,300].map(s => (
+                    <button key={s} onClick={() => updateRestSecs(s)}
+                      className="py-2.5 rounded-xl text-[12px] font-bold transition-all"
+                      style={restSecs===s
+                        ? { backgroundColor:ambito.color, color:'#000' }
+                        : { backgroundColor:'#111', border:'1px solid #242424', color:'#666' }}>
+                      {s < 60 ? `${s}s` : s%60===0 ? `${s/60}min` : `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`}
+                    </button>
+                  ))}
+                </div>
+                <div className="mb-4">
+                  <p className="field-label mb-1">Tiempo personalizado</p>
+                  <div className="flex gap-2">
+                    <input type="number" min={5} max={600} placeholder="ej: 75"
+                      className="field-input flex-1 text-center"
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          const v = Math.max(5, Math.min(600, Number(e.target.value)))
+                          if (v) { updateRestSecs(v); e.target.value = '' }
+                        }
+                      }}/>
+                    <span className="flex items-center text-[12px] text-lo">seg</span>
+                  </div>
+                  <p className="text-[11px] text-lo mt-1">Escribe los segundos y presiona Enter</p>
+                </div>
+                <button className="btn-primary w-full" onClick={() => setShowRestConfig(false)}>Listo</button>
               </div>
-              <p className="text-[11px] text-lo mt-1">Escribe los segundos y presiona Enter</p>
             </div>
-            <button className="btn-primary w-full" onClick={() => setShowRestConfig(false)}>Listo</button>
-          </div>
-        </div>
-      )}
-
-      {/* ── Modal: Confirmar abandono de sesión ──────────────────────────────── */}
-      {showAbortConfirm && (
-        <div className="fixed inset-0 bg-black/80 z-[80] flex items-center justify-center backdrop-blur-sm px-6"
-          onClick={() => setShowAbortConfirm(false)}>
-          <div className="bg-card border border-border-2 rounded-2xl p-6 w-full max-w-sm shadow-2xl"
-            onClick={e => e.stopPropagation()}>
-            <h3 className="text-[17px] font-black text-hi mb-1">¿Abandonar sesión?</h3>
-            <p className="text-[13px] text-lo mb-6">Se perderá el progreso del entreno actual.</p>
-            <div className="flex gap-3">
-              <button className="flex-1 py-3 rounded-xl text-[13px] font-semibold text-mid"
-                style={{ backgroundColor:'#1a1a1a', border:'1px solid #2a2a2a' }}
-                onClick={() => setShowAbortConfirm(false)}>
-                Cancelar
-              </button>
-              <button className="flex-1 py-3 rounded-xl text-[13px] font-bold text-white"
-                style={{ backgroundColor:'#e05c5c' }}
-                onClick={() => { setShowAbortConfirm(false); abortSession() }}>
-                Abandonar
-              </button>
+          )}
+          {showAbortConfirm && (
+            <div className="fixed inset-0 bg-black/80 z-[80] flex items-center justify-center backdrop-blur-sm px-6"
+              onClick={() => setShowAbortConfirm(false)}>
+              <div className="bg-card border border-border-2 rounded-2xl p-6 w-full max-w-sm shadow-2xl"
+                onClick={e => e.stopPropagation()}>
+                <h3 className="text-[17px] font-black text-hi mb-1">¿Abandonar sesión?</h3>
+                <p className="text-[13px] text-lo mb-6">Se perderá el progreso del entreno actual.</p>
+                <div className="flex gap-3">
+                  <button className="flex-1 py-3 rounded-xl text-[13px] font-semibold text-mid"
+                    style={{ backgroundColor:'#1a1a1a', border:'1px solid #2a2a2a' }}
+                    onClick={() => setShowAbortConfirm(false)}>
+                    Cancelar
+                  </button>
+                  <button className="flex-1 py-3 rounded-xl text-[13px] font-bold text-white"
+                    style={{ backgroundColor:'#e05c5c' }}
+                    onClick={() => { setShowAbortConfirm(false); abortSession() }}>
+                    Abandonar
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          )}
+        </>,
+        document.body
       )}
     </div>
   )
