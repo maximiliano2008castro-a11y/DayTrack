@@ -698,6 +698,58 @@ function SessionComplete({ session, elapsed, unit, onClose }) {
   )
 }
 
+// ── Componentes aislados que leen el timer (se re-renderizan cada segundo pero no arrastran a GymView)
+function SessionTimerDisplay({ color, doneSeries, totalSeries }) {
+  const { elapsed } = useGymTimer()
+  return (
+    <div className="px-5 py-4 shrink-0">
+      <div className="text-center mb-4">
+        <span className="font-mono text-[44px] font-black leading-none"
+          style={{ color, textShadow:`0 0 30px ${color}60` }}>
+          {fmt(elapsed)}
+        </span>
+      </div>
+      <div className="flex items-center gap-3">
+        <div className="flex-1 h-1.5 rounded-full bg-white/5 overflow-hidden">
+          <div className="h-full rounded-full transition-all duration-700"
+            style={{ width:`${(doneSeries/totalSeries)*100}%`, backgroundColor:color, boxShadow:`0 0 10px ${color}` }}/>
+        </div>
+        <span className="text-[11px] font-mono text-lo shrink-0">{doneSeries}/{totalSeries}</span>
+      </div>
+    </div>
+  )
+}
+
+function RestOverlayFromContext({ session, unit, color, alarmActive, silenceAlarm, skipRest, startExtraRest }) {
+  const { restTimer } = useGymTimer()
+  if (!restTimer || !session) return null
+  const nextEx = session.flat[restTimer.nextExIdx]
+  const lastWs = nextEx ? getLastWeightsForExercise(nextEx.name) : []
+  return (
+    <RestOverlay
+      timer={restTimer} nextEx={nextEx} unit={unit}
+      lastWeights={lastWs} color={color}
+      alarmActive={alarmActive}
+      onSkip={skipRest} onStartExtra={startExtraRest} onSilence={silenceAlarm}
+    />
+  )
+}
+
+function SessionPillFromContext({ currentEx, setIdx, color, onExpand }) {
+  const { elapsed } = useGymTimer()
+  return <SessionPill currentEx={currentEx} setIdx={setIdx} elapsed={elapsed} color={color} onExpand={onExpand}/>
+}
+
+function FeelingScreenFromContext({ session, unit, onSubmit }) {
+  const { elapsed } = useGymTimer()
+  return <FeelingScreen session={session} elapsed={elapsed} unit={unit} onSubmit={onSubmit}/>
+}
+
+function SessionCompleteFromContext({ session, unit, onClose }) {
+  const { elapsed } = useGymTimer()
+  return <SessionComplete session={session} elapsed={elapsed} unit={unit} onClose={onClose}/>
+}
+
 // ── GymView ───────────────────────────────────────────────────────────────────
 const TABS = ['Semana', 'Rutinas', 'Calendario', 'Historial']
 
@@ -730,8 +782,6 @@ export default function GymView({ ambito }) {
     saveFeelingAndFinish, abortSession,
   } = useGymSession()
 
-  // Timers — se actualiza cada segundo (solo lo usan los displays de tiempo)
-  const { elapsed, restTimer, totalRestTime } = useGymTimer()
 
   const [sessionMinimized,  setSessionMinimized]  = useState(false)
   const [selectedSession,   setSelectedSession]   = useState(null)
@@ -1070,21 +1120,7 @@ export default function GymView({ ambito }) {
             </div>
 
             {/* Timer + progress */}
-            <div className="px-5 py-4 shrink-0">
-              <div className="text-center mb-4">
-                <span className="font-mono text-[44px] font-black leading-none"
-                  style={{ color:ambito.color, textShadow:`0 0 30px ${ambito.color}60` }}>
-                  {fmt(elapsed)}
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-1.5 rounded-full bg-white/5 overflow-hidden">
-                  <div className="h-full rounded-full transition-all duration-700"
-                    style={{ width:`${(doneSeries/totalSeries)*100}%`, backgroundColor:ambito.color, boxShadow:`0 0 10px ${ambito.color}` }}/>
-                </div>
-                <span className="text-[11px] font-mono text-lo shrink-0">{doneSeries}/{totalSeries}</span>
-              </div>
-            </div>
+            <SessionTimerDisplay color={ambito.color} doneSeries={doneSeries} totalSeries={totalSeries}/>
 
             {/* Exercise card */}
             <div className="flex-1 overflow-y-auto px-5 pb-5">
@@ -1185,7 +1221,7 @@ export default function GymView({ ambito }) {
           {/* Pill minimizada */}
           <div className="transition-all duration-500"
             style={{ opacity:sessionMinimized?1:0, pointerEvents:sessionMinimized?'all':'none', transform:sessionMinimized?'translateY(0)':'translateY(80px)' }}>
-            <SessionPill currentEx={currentEx} setIdx={session.setIdx} elapsed={elapsed} color={ambito.color} onExpand={() => setSessionMinimized(false)}/>
+            <SessionPillFromContext currentEx={currentEx} setIdx={session.setIdx} color={ambito.color} onExpand={() => setSessionMinimized(false)}/>
           </div>
         </>
       )}
@@ -1353,33 +1389,20 @@ export default function GymView({ ambito }) {
       })()}
 
       {/* Rest timer overlay */}
-      {restTimer && session && (() => {
-        const nextEx   = session.flat[restTimer.nextExIdx]
-        const lastWs   = nextEx ? getLastWeightsForExercise(nextEx.name) : []
-        return (
-          <RestOverlay
-            timer={restTimer}
-            nextEx={nextEx}
-            unit={unit}
-            lastWeights={lastWs}
-            color={ambito.color}
-            alarmActive={alarmActive}
-            onSkip={skipRest}
-            onStartExtra={startExtraRest}
-            onSilence={silenceAlarm}
-          />
-        )
-      })()}
+      <RestOverlayFromContext
+        session={session} unit={unit} color={ambito.color}
+        alarmActive={alarmActive} silenceAlarm={silenceAlarm}
+        skipRest={skipRest} startExtraRest={startExtraRest}
+      />
 
       {/* ¿Cómo te sentiste? */}
       {session && sessionDone && showFeeling && (
-        <FeelingScreen session={session} elapsed={elapsed} unit={unit}
-          onSubmit={saveFeelingAndFinish}/>
+        <FeelingScreenFromContext session={session} unit={unit} onSubmit={saveFeelingAndFinish}/>
       )}
 
       {/* Sesión completa */}
       {session && sessionDone && !showFeeling && (
-        <SessionComplete session={session} elapsed={elapsed} unit={unit} onClose={abortSession}/>
+        <SessionCompleteFromContext session={session} unit={unit} onClose={abortSession}/>
       )}
 
       {/* Modal: config descanso */}
