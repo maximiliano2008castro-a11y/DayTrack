@@ -287,10 +287,10 @@ export default function Layout({ children }) {
           CONTENIDO PRINCIPAL
       ══════════════════════════════════════════════ */}
       <main className={`
-        flex-1 min-h-screen w-full
+        flex-1 w-full
         md:ml-52
         pt-14 md:pt-0
-        pb-16 md:pb-0
+        pb-20 md:pb-6
       `}>
         {children}
       </main>
