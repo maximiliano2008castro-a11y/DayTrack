@@ -844,7 +844,7 @@ export default function GymView({ ambito }) {
   const lastWeight = lastWs[session?.setIdx] || lastWs[0] || null
 
   return (
-    <div className="min-h-screen">
+    <div>
       <AmbitoHeader ambito={ambito} habits={habits} extra={
         <div className="flex items-center gap-2 ml-auto">
           {/* Rest config */}
