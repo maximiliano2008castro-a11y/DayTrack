@@ -76,7 +76,7 @@ export default function Layout({ children }) {
       {/* ══════════════════════════════════════════════
           SIDEBAR — solo desktop (md+)
       ══════════════════════════════════════════════ */}
-      <aside className="hidden md:flex w-52 shrink-0 border-r border-border flex-col fixed h-full bg-surface overflow-y-auto z-30">
+      <aside className="hidden md:flex w-52 shrink-0 border-r border-border flex-col fixed h-full bg-surface overflow-y-auto z-[65]">
 
         {/* Brand */}
         <div className="px-4 py-4 border-b border-border">
@@ -144,7 +144,7 @@ export default function Layout({ children }) {
       {/* ══════════════════════════════════════════════
           TOPBAR — solo móvil
       ══════════════════════════════════════════════ */}
-      <header className="md:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 h-14"
+      <header className="md:hidden fixed top-0 left-0 right-0 z-[65] flex items-center justify-between px-4 h-14"
         style={{ backgroundColor:'#0e0e0eee', borderBottom:'1px solid #1a1a1a', backdropFilter:'blur(12px)' }}>
         <Link to="/" className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center">
@@ -172,11 +172,11 @@ export default function Layout({ children }) {
       {drawerOpen && (
         <>
           {/* Backdrop */}
-          <div className="md:hidden fixed inset-0 z-50 bg-black/60"
+          <div className="md:hidden fixed inset-0 z-[70] bg-black/60"
             style={{ backdropFilter:'blur(4px)' }}
             onClick={() => setDrawerOpen(false)}/>
           {/* Panel */}
-          <div className="md:hidden fixed top-0 right-0 h-full w-72 z-50 flex flex-col overflow-y-auto"
+          <div className="md:hidden fixed top-0 right-0 h-full w-72 z-[70] flex flex-col overflow-y-auto"
             style={{ backgroundColor:'#111', borderLeft:'1px solid #1a1a1a',
                      animation:'slideInRight 0.25s cubic-bezier(0.16,1,0.3,1) both' }}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
@@ -248,7 +248,7 @@ export default function Layout({ children }) {
       {/* ══════════════════════════════════════════════
           BOTTOM NAV — móvil (5 tabs principales)
       ══════════════════════════════════════════════ */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 flex items-center"
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-[65] flex items-center"
         style={{ backgroundColor:'#0e0e0ef0', borderTop:'1px solid #1a1a1a',
                  backdropFilter:'blur(16px)', height:60 }}>
         {[
