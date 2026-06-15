@@ -7,7 +7,7 @@ import {
 import { AMBITOS, getSelectedAmbitos } from '../store'
 import { getAmbitoIcon } from '../ambitoIcons'
 import { useAuth } from '../context/AuthContext'
-import { useGymSession } from '../context/GymSessionContext'
+import { useGymSession, useGymTimer } from '../context/GymSessionContext'
 
 const mainNav = [
   { to: '/',          icon: SquaresFour, label: 'Inicio'    },
@@ -31,6 +31,7 @@ export default function Layout({ children }) {
   const activeAmbitos  = AMBITOS.filter(a => getSelectedAmbitos().includes(a.id))
 
   const gymSession = useGymSession()
+  const gymTimer   = useGymTimer()
   const gymAmbito  = AMBITOS.find(a => a.id === 'gym')
   const onGymPage  = pathname === '/ambito/gym'
   const showPill   = gymSession?.session && !gymSession?.sessionDone && !onGymPage
@@ -267,7 +268,7 @@ export default function Layout({ children }) {
           }}>
           <span className="font-mono text-[18px] font-bold shrink-0"
             style={{ color: gymAmbito?.color ?? '#e05c5c' }}>
-            {fmt(gymSession.elapsed)}
+            {fmt(gymTimer?.elapsed ?? 0)}
           </span>
           <div className="flex-1 min-w-0">
             <p className="text-[13px] font-semibold text-hi truncate">{gymSession.currentEx?.name}</p>

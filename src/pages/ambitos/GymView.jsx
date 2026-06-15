@@ -10,7 +10,7 @@ import {
   getGymUnit, saveGymUnit, getLastWeightsForExercise,
 } from '../../store'
 import GymCalendario from './GymCalendario'
-import { useGymSession } from '../../context/GymSessionContext'
+import { useGymSession, useGymTimer } from '../../context/GymSessionContext'
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 const MUSCLE_GROUPS = [
@@ -718,17 +718,20 @@ export default function GymView({ ambito }) {
     setUnit(next); saveGymUnit(next)
   }
 
-  // Session — from global context so it survives navigation
+  // Session — datos estables (no re-renderiza cada segundo)
   const {
-    session, elapsed, currentWeight, setCurrentWeight,
+    session, currentWeight, setCurrentWeight,
     sessionDone, showFeeling, setShowFeeling,
     flash, prFlash, history, setHistory,
-    restTimer, totalRestTime, restSecs, updateRestSecs,
+    restSecs, updateRestSecs,
     alarmActive, silenceAlarm,
     currentEx, totalSeries, doneSeries,
     startSession, completeSet, skipRest, startExtraRest,
     saveFeelingAndFinish, abortSession,
   } = useGymSession()
+
+  // Timers — se actualiza cada segundo (solo lo usan los displays de tiempo)
+  const { elapsed, restTimer, totalRestTime } = useGymTimer()
 
   const [sessionMinimized,  setSessionMinimized]  = useState(false)
   const [selectedSession,   setSelectedSession]   = useState(null)

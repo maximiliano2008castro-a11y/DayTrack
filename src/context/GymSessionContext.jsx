@@ -21,26 +21,30 @@ const MUSCLE_GROUPS = [
 const muscleColor = n => MUSCLE_GROUPS.find(m => m.name === n)?.color || '#888'
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 5)
 
+// ── Contexto estable: datos de sesión (no cambia cada segundo) ────────────────
 const GymSessionContext = createContext(null)
+// ── Contexto de timers: cambia cada segundo, solo lo usan los componentes de timer
+const GymTimerContext   = createContext(null)
 
 export function GymSessionProvider({ children }) {
-  const saved = getActiveGymSession()
-
+  // ── Estado estable ──────────────────────────────────────────────────────────
   const [session,       setSession]       = useState(() => getActiveGymSession()?.session       ?? null)
-  const [elapsed,       setElapsed]       = useState(() => getActiveGymSession()?.elapsed       ?? 0)
   const [currentWeight, setCurrentWeight] = useState(() => getActiveGymSession()?.currentWeight ?? '')
   const [sessionDone,   setSessionDone]   = useState(false)
   const [showFeeling,   setShowFeeling]   = useState(false)
   const [flash,         setFlash]         = useState(false)
   const [prFlash,       setPrFlash]       = useState(null)
   const [history,       setHistory]       = useState(getGymSessions)
-  const [restTimer,     setRestTimer]     = useState(null)
-  const [totalRestTime, setTotalRestTime] = useState(0)
   const [restSecs,      setRestSecs]      = useState(getGymRestSecs)
   const [alarmActive,   setAlarmActive]   = useState(false)
   const alarmRef = useRef(null)
 
-  // Persist active session to localStorage
+  // ── Estado de timers (cambia cada segundo) ──────────────────────────────────
+  const [elapsed,       setElapsed]       = useState(() => getActiveGymSession()?.elapsed ?? 0)
+  const [restTimer,     setRestTimer]     = useState(null)
+  const [totalRestTime, setTotalRestTime] = useState(0)
+
+  // Persist to localStorage cada vez que cambia algo relevante
   useEffect(() => {
     if (session && !sessionDone) {
       saveActiveGymSession({ session, elapsed, currentWeight })
@@ -122,7 +126,7 @@ export function GymSessionProvider({ children }) {
     })
   }
 
-  const completeSet = (unit) => {
+  const completeSet = () => {
     if (!session) return
     const { flat, logs, exIdx, setIdx } = session
     const ex      = flat[exIdx]
@@ -201,20 +205,29 @@ export function GymSessionProvider({ children }) {
   const totalSeries = session ? session.flat.reduce((a,e)=>a+e.totalSets,0) : 0
   const doneSeries  = session ? Object.values(session.logs).reduce((a,arr)=>a+arr.length,0) : 0
 
+  // Valor estable — solo cambia cuando la sesión o ejercicio cambia, NO cada segundo
+  const sessionValue = {
+    session, currentWeight, setCurrentWeight,
+    sessionDone, showFeeling, setShowFeeling,
+    flash, prFlash, history, setHistory,
+    restSecs, updateRestSecs,
+    alarmActive, silenceAlarm,
+    currentEx, totalSeries, doneSeries,
+    startSession, completeSet, advanceToNext,
+    skipRest, startExtraRest, saveFeelingAndFinish, abortSession,
+  }
+
+  // Valor de timers — cambia cada segundo
+  const timerValue = { elapsed, restTimer, totalRestTime }
+
   return (
-    <GymSessionContext.Provider value={{
-      session, elapsed, currentWeight, setCurrentWeight,
-      sessionDone, showFeeling, setShowFeeling,
-      flash, prFlash, history, setHistory,
-      restTimer, totalRestTime, restSecs, updateRestSecs,
-      alarmActive, silenceAlarm,
-      currentEx, totalSeries, doneSeries,
-      startSession, completeSet, advanceToNext,
-      skipRest, startExtraRest, saveFeelingAndFinish, abortSession,
-    }}>
-      {children}
+    <GymSessionContext.Provider value={sessionValue}>
+      <GymTimerContext.Provider value={timerValue}>
+        {children}
+      </GymTimerContext.Provider>
     </GymSessionContext.Provider>
   )
 }
 
 export const useGymSession = () => useContext(GymSessionContext)
+export const useGymTimer   = () => useContext(GymTimerContext)
