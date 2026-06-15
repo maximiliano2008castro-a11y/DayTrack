@@ -1122,7 +1122,7 @@ export default function GymView({ ambito }) {
       {/* ── Sesión activa: portal fuera de ambito-animate para evitar CSS conflicts ── */}
       {session && !sessionDone && createPortal(
         <>
-          <div ref={overlayRef} className="fixed inset-0 md:left-52 z-[60] flex flex-col bg-bg gym-overlay-panel">
+          <div ref={overlayRef} className="fixed inset-x-0 bottom-0 top-14 md:top-0 md:left-52 z-[60] flex flex-col bg-bg gym-overlay-panel">
 
             {/* Top bar */}
             <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-border shrink-0">
