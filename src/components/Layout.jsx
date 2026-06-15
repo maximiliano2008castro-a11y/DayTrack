@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   SquaresFour, CheckSquare, Target, Trophy, NotePencil,
-  SignOut, GearSix, List, X, Compass, ArrowsOut,
+  SignOut, GearSix, List, X, ArrowsOut,
 } from '@phosphor-icons/react'
 import { AMBITOS, getSelectedAmbitos } from '../store'
 import { getAmbitoIcon } from '../ambitoIcons'
@@ -22,19 +22,48 @@ const fmt = s => {
   return `${String(Math.floor(s/3600)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}:${String(sec).padStart(2,'0')}`
 }
 
+// Componente aislado — llama useGymTimer() solo aquí, no arrastra re-renders a Layout
+function GlobalGymPill() {
+  const { session, sessionDone, currentEx } = useGymSession()
+  const { elapsed } = useGymTimer()
+  const navigate  = useNavigate()
+  const { pathname } = useLocation()
+  const gymAmbito = AMBITOS.find(a => a.id === 'gym')
+  const color     = gymAmbito?.color ?? '#e05c5c'
+
+  if (!session || sessionDone || pathname === '/ambito/gym') return null
+
+  return (
+    <div className="fixed bottom-[72px] md:bottom-4 left-4 right-4 md:left-[220px] z-[60] rounded-2xl flex items-center gap-3 px-5 py-3"
+      style={{
+        background: 'linear-gradient(135deg,#111,#0d0d0d)',
+        border: `1px solid ${color}40`,
+        boxShadow: `0 0 30px ${color}35, 0 8px 32px rgba(0,0,0,.6)`,
+      }}>
+      <span className="font-mono text-[18px] font-bold shrink-0" style={{ color }}>
+        {fmt(elapsed)}
+      </span>
+      <div className="flex-1 min-w-0">
+        <p className="text-[13px] font-semibold text-hi truncate">{currentEx?.name}</p>
+        <p className="text-[11px]" style={{ color }}>
+          {currentEx?.muscle} · Serie {(session.setIdx ?? 0) + 1}/{currentEx?.totalSets}
+        </p>
+      </div>
+      <button onClick={() => navigate('/ambito/gym')}
+        className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold"
+        style={{ backgroundColor: `${color}20`, color }}>
+        <ArrowsOut size={13}/> Volver
+      </button>
+    </div>
+  )
+}
+
 export default function Layout({ children }) {
   const location       = useLocation()
   const { pathname }   = location
   const { user, logout } = useAuth()
-  const navigate         = useNavigate()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const activeAmbitos  = AMBITOS.filter(a => getSelectedAmbitos().includes(a.id))
-
-  const gymSession = useGymSession()
-  const gymTimer   = useGymTimer()
-  const gymAmbito  = AMBITOS.find(a => a.id === 'gym')
-  const onGymPage  = pathname === '/ambito/gym'
-  const showPill   = gymSession?.session && !gymSession?.sessionDone && !onGymPage
 
   const avatar = (() => {
     try { return JSON.parse(localStorage.getItem('dt_profile') || '{}').avatar || '🧑' }
@@ -256,34 +285,8 @@ export default function Layout({ children }) {
         {children}
       </main>
 
-      {/* ══════════════════════════════════════════════
-          PILL SESIÓN GYM GLOBAL (fuera de la página gym)
-      ══════════════════════════════════════════════ */}
-      {showPill && (
-        <div className="fixed bottom-[72px] md:bottom-4 left-4 right-4 md:left-[220px] z-[60] rounded-2xl flex items-center gap-3 px-5 py-3"
-          style={{
-            background: 'linear-gradient(135deg,#111,#0d0d0d)',
-            border: `1px solid ${gymAmbito?.color ?? '#e05c5c'}40`,
-            boxShadow: `0 0 30px ${gymAmbito?.color ?? '#e05c5c'}35, 0 8px 32px rgba(0,0,0,.6)`,
-          }}>
-          <span className="font-mono text-[18px] font-bold shrink-0"
-            style={{ color: gymAmbito?.color ?? '#e05c5c' }}>
-            {fmt(gymTimer?.elapsed ?? 0)}
-          </span>
-          <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-semibold text-hi truncate">{gymSession.currentEx?.name}</p>
-            <p className="text-[11px]" style={{ color: gymAmbito?.color ?? '#e05c5c' }}>
-              {gymSession.currentEx?.muscle} · Serie {(gymSession.session?.setIdx ?? 0) + 1}/{gymSession.currentEx?.totalSets}
-            </p>
-          </div>
-          <button
-            onClick={() => navigate('/ambito/gym')}
-            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold"
-            style={{ backgroundColor: `${gymAmbito?.color ?? '#e05c5c'}20`, color: gymAmbito?.color ?? '#e05c5c' }}>
-            <ArrowsOut size={13}/> Volver
-          </button>
-        </div>
-      )}
+      {/* Pill global de sesión gym — aislado para no re-renderizar Layout */}
+      <GlobalGymPill />
     </div>
   )
 }
