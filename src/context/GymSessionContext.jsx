@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useRef } from 'react'
+import { createContext, useContext, useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import {
   getGymSessions, addGymSession, getLastWeightsForExercise,
   getGymRestSecs, saveGymRestSecs,
@@ -199,26 +199,44 @@ export function GymSessionProvider({ children }) {
     setRestTimer(null); setTotalRestTime(0)
   }
 
-  const updateRestSecs = secs => { setRestSecs(secs); saveGymRestSecs(secs) }
+  const updateRestSecs = useCallback(secs => { setRestSecs(secs); saveGymRestSecs(secs) }, [])
+  const cbSilenceAlarm     = useCallback(silenceAlarm, [])
+  const cbStartSession     = useCallback(startSession, [])
+  const cbAdvanceToNext    = useCallback(advanceToNext, [])
+  const cbCompleteSet      = useCallback(completeSet, [session, currentWeight, restSecs])
+  const cbSkipRest         = useCallback(skipRest, [restTimer])
+  const cbStartExtraRest   = useCallback(startExtraRest, [restTimer])
+  const cbSaveFeelingAndFinish = useCallback(saveFeelingAndFinish, [session, totalRestTime])
+  const cbAbortSession     = useCallback(abortSession, [])
 
   const currentEx   = session ? session.flat[session.exIdx] : null
   const totalSeries = session ? session.flat.reduce((a,e)=>a+e.totalSets,0) : 0
   const doneSeries  = session ? Object.values(session.logs).reduce((a,arr)=>a+arr.length,0) : 0
 
-  // Valor estable — solo cambia cuando la sesión o ejercicio cambia, NO cada segundo
-  const sessionValue = {
+  // useMemo: la referencia solo cambia cuando cambia la sesión, NO cada segundo (elapsed no está aquí)
+  const sessionValue = useMemo(() => ({
     session, currentWeight, setCurrentWeight,
     sessionDone, showFeeling, setShowFeeling,
     flash, prFlash, history, setHistory,
     restSecs, updateRestSecs,
-    alarmActive, silenceAlarm,
+    alarmActive, silenceAlarm: cbSilenceAlarm,
     currentEx, totalSeries, doneSeries,
-    startSession, completeSet, advanceToNext,
-    skipRest, startExtraRest, saveFeelingAndFinish, abortSession,
-  }
+    startSession: cbStartSession,
+    completeSet: cbCompleteSet,
+    advanceToNext: cbAdvanceToNext,
+    skipRest: cbSkipRest,
+    startExtraRest: cbStartExtraRest,
+    saveFeelingAndFinish: cbSaveFeelingAndFinish,
+    abortSession: cbAbortSession,
+  }), [
+    session, currentWeight, sessionDone, showFeeling,
+    flash, prFlash, history, restSecs, alarmActive,
+    currentEx, totalSeries, doneSeries,
+    cbCompleteSet, cbSkipRest, cbStartExtraRest, cbSaveFeelingAndFinish,
+  ])
 
-  // Valor de timers — cambia cada segundo
-  const timerValue = { elapsed, restTimer, totalRestTime }
+  // timerValue sí cambia cada segundo, pero solo lo consumen los subcomponentes de timer
+  const timerValue = useMemo(() => ({ elapsed, restTimer, totalRestTime }), [elapsed, restTimer, totalRestTime])
 
   return (
     <GymSessionContext.Provider value={sessionValue}>
