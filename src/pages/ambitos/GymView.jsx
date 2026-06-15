@@ -1122,8 +1122,7 @@ export default function GymView({ ambito }) {
       {/* ── Sesión activa: portal fuera de ambito-animate para evitar CSS conflicts ── */}
       {session && !sessionDone && createPortal(
         <>
-          <div ref={overlayRef} className="fixed inset-0 md:left-52 z-[60] flex flex-col bg-bg"
-            style={{ transition: 'opacity 0.5s ease, transform 0.5s ease', opacity: 1, pointerEvents: 'all', transform: 'scale(1) translateY(0)' }}>
+          <div ref={overlayRef} className="fixed inset-0 md:left-52 z-[60] flex flex-col bg-bg gym-overlay-panel">
 
             {/* Top bar */}
             <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-border shrink-0">
@@ -1243,7 +1242,7 @@ export default function GymView({ ambito }) {
           )}
 
           {/* Pill minimizada */}
-          <div ref={pillRef} style={{ opacity: 0, pointerEvents: 'none', transform: 'translateY(80px)', transition: 'opacity 0.5s ease, transform 0.5s ease' }}>
+          <div ref={pillRef} className="gym-pill-panel">
             <SessionPillFromContext currentEx={currentEx} setIdx={session.setIdx} color={ambito.color} onExpand={handleExpand}/>
           </div>
         </>,

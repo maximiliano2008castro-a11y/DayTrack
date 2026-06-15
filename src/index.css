@@ -246,3 +246,17 @@ nav a:active { transform: scale(0.97); }
 
 /* ── Link transitions ──────────────────────────────────────────────────────── */
 a { transition: color 0.15s ease, opacity 0.15s ease; }
+
+/* ── Gym session overlay — estilos base via CSS para que React no los sobreescriba ── */
+.gym-overlay-panel {
+  opacity: 1;
+  pointer-events: all;
+  transform: scale(1) translateY(0);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.gym-pill-panel {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(80px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}

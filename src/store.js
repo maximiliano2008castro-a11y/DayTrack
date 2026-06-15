@@ -147,9 +147,11 @@ export function getLastWeightsForExercise(name) {
   return []
 }
 
+// Solo localStorage — no Firestore. Si se sincronizara, el listener remoto
+// llamaria remoteRev++ cada segundo y re-montaria todas las rutas animadas.
 export const getActiveGymSession  = () => load('dt_gym_active_session', null)
-export const saveActiveGymSession = s => save('dt_gym_active_session', s)
-export const clearActiveGymSession = () => save('dt_gym_active_session', null)
+export const saveActiveGymSession = s => localStorage.setItem('dt_gym_active_session', JSON.stringify(s))
+export const clearActiveGymSession = () => localStorage.removeItem('dt_gym_active_session')
 
 export const getWorkouts = () => load('dt_gym_workouts', [])
 export function saveWorkout(workout) {
