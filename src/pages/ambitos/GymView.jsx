@@ -1039,8 +1039,14 @@ export default function GymView({ ambito }) {
       {/* ── Sesión activa: pantalla completa ─────────────────────────────────── */}
       {session && !sessionDone && (
         <>
-          <div className="fixed inset-0 z-[60] flex flex-col bg-bg transition-all duration-500"
-            style={{ opacity:sessionMinimized?0:1, pointerEvents:sessionMinimized?'none':'all', transform:sessionMinimized?'scale(0.96) translateY(20px)':'scale(1) translateY(0)' }}>
+          <div className="fixed inset-0 z-[60] flex flex-col bg-bg"
+            style={{
+              animation: 'none',
+              transition: 'opacity 0.5s ease, transform 0.5s ease',
+              opacity: sessionMinimized ? 0 : 1,
+              pointerEvents: sessionMinimized ? 'none' : 'all',
+              transform: sessionMinimized ? 'scale(0.96) translateY(20px)' : 'scale(1) translateY(0)',
+            }}>
 
             {/* Top bar */}
             <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-border shrink-0">
