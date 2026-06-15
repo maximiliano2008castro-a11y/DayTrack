@@ -39,14 +39,15 @@ const GymSessionContext = createContext(null)
 export function GymSessionProvider({ children }) {
   const saved = getActiveGymSession()
 
-  const [session,       setSession]       = useState(() => saved?.session       ?? null)
-  const [currentWeight, setCurrentWeight] = useState(() => saved?.currentWeight ?? '')
-  const [sessionDone,   setSessionDone]   = useState(false)
-  const [showFeeling,   setShowFeeling]   = useState(false)
-  const [flash,         setFlash]         = useState(false)
-  const [prFlash,       setPrFlash]       = useState(null)
-  const [history,       setHistory]       = useState(getGymSessions)
-  const [restSecs,      setRestSecs]      = useState(getGymRestSecs)
+  const [session,          setSession]          = useState(() => saved?.session       ?? null)
+  const [currentWeight,    setCurrentWeight]    = useState(() => saved?.currentWeight ?? '')
+  const [sessionDone,      setSessionDone]      = useState(false)
+  const [showFeeling,      setShowFeeling]      = useState(false)
+  const [sessionMinimized, setSessionMinimized] = useState(false)
+  const [flash,            setFlash]            = useState(false)
+  const [prFlash,          setPrFlash]          = useState(null)
+  const [history,          setHistory]          = useState(getGymSessions)
+  const [restSecs,         setRestSecs]         = useState(getGymRestSecs)
 
   // Refs para leer valores actuales del timer sin crear dependencias en useCallback
   const sessionRef      = useRef(session)
@@ -136,7 +137,7 @@ export function GymSessionProvider({ children }) {
     clearActiveGymSession()
     setTimer({ elapsed: 0, restTimer: null, totalRestTime: 0, alarmActive: false })
     setSession({ rutinaId:rutina.id, rutinaName:rutina.name, flat, logs:{}, exIdx:0, setIdx:0 })
-    setCurrentWeight(''); setSessionDone(false)
+    setCurrentWeight(''); setSessionDone(false); setSessionMinimized(false)
   }, [silenceAlarm])
 
   const advanceToNext = useCallback((nextExIdx, nextSetIdx) => {
@@ -215,7 +216,7 @@ export function GymSessionProvider({ children }) {
     clearActiveGymSession()
     setTimer({ elapsed:0, restTimer:null, totalRestTime:0, alarmActive:false })
     setSession(null); setSessionDone(false)
-    setShowFeeling(false); setCurrentWeight('')
+    setShowFeeling(false); setCurrentWeight(''); setSessionMinimized(false)
   }, [silenceAlarm])
 
   const updateRestSecs = useCallback(secs => { setRestSecs(secs); saveGymRestSecs(secs) }, [])
@@ -228,6 +229,7 @@ export function GymSessionProvider({ children }) {
   const value = useMemo(() => ({
     session, currentWeight, setCurrentWeight,
     sessionDone, showFeeling, setShowFeeling,
+    sessionMinimized, setSessionMinimized,
     flash, prFlash, history, setHistory,
     restSecs, updateRestSecs,
     silenceAlarm,
@@ -235,7 +237,7 @@ export function GymSessionProvider({ children }) {
     startSession, completeSet, advanceToNext,
     skipRest, startExtraRest, saveFeelingAndFinish, abortSession,
   }), [
-    session, currentWeight, sessionDone, showFeeling,
+    session, currentWeight, sessionDone, showFeeling, sessionMinimized,
     flash, prFlash, history, restSecs,
     currentEx, totalSeries, doneSeries,
     updateRestSecs, silenceAlarm,

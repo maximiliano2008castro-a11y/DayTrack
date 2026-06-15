@@ -426,7 +426,7 @@ function RutinaDetail({ rutina, onChange, onBack, onDelete }) {
 // ── Pill minimizada ───────────────────────────────────────────────────────────
 function SessionPill({ currentEx, setIdx, elapsed, color, onExpand }) {
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-[60] rounded-2xl flex items-center gap-3 px-5 py-3"
+    <div className="fixed bottom-4 left-4 right-4 md:left-56 z-[60] rounded-2xl flex items-center gap-3 px-5 py-3"
       style={{ background:'linear-gradient(135deg,#111,#0d0d0d)', border:`1px solid ${color}40`, boxShadow:`0 0 30px ${color}35, 0 8px 32px rgba(0,0,0,.6)` }}>
       <span className="font-mono text-[18px] font-bold shrink-0" style={{ color }}>{fmt(elapsed)}</span>
       <div className="flex-1 min-w-0">
@@ -775,6 +775,7 @@ export default function GymView({ ambito }) {
   const {
     session, currentWeight, setCurrentWeight,
     sessionDone, showFeeling, setShowFeeling,
+    sessionMinimized, setSessionMinimized,
     flash, prFlash, history, setHistory,
     restSecs, updateRestSecs,
     alarmActive, silenceAlarm,
@@ -782,9 +783,6 @@ export default function GymView({ ambito }) {
     startSession, completeSet, skipRest, startExtraRest,
     saveFeelingAndFinish, abortSession,
   } = useGymSession()
-
-
-  const [sessionMinimized,  setSessionMinimized]  = useState(false)
   const [selectedSession,   setSelectedSession]   = useState(null)
   const [showRestConfig,    setShowRestConfig]    = useState(false)
   const [showAbortConfirm,  setShowAbortConfirm]  = useState(false)
@@ -1093,7 +1091,7 @@ export default function GymView({ ambito }) {
       {/* ── Sesión activa: portal fuera de ambito-animate para evitar CSS conflicts ── */}
       {session && !sessionDone && createPortal(
         <>
-          <div className="fixed inset-0 z-[60] flex flex-col bg-bg"
+          <div className="fixed inset-0 md:left-52 z-[60] flex flex-col bg-bg"
             style={{
               transition: 'opacity 0.5s ease, transform 0.5s ease',
               opacity: sessionMinimized ? 0 : 1,
