@@ -741,6 +741,33 @@ function SessionPillFromContext({ currentEx, setIdx, color, onExpand }) {
   return <SessionPill currentEx={currentEx} setIdx={setIdx} elapsed={elapsed} color={color} onExpand={onExpand}/>
 }
 
+// Aísla la visibilidad del overlay — solo este componente se re-renderiza al minimizar
+function OverlayVisibility({ children }) {
+  const minimized = useGymMinimized()
+  return (
+    <div className="fixed inset-0 md:left-52 z-[60] flex flex-col bg-bg"
+      style={{
+        transition: 'opacity 0.5s ease, transform 0.5s ease',
+        opacity: minimized ? 0 : 1,
+        pointerEvents: minimized ? 'none' : 'all',
+        transform: minimized ? 'scale(0.96) translateY(20px)' : 'scale(1) translateY(0)',
+      }}>
+      {children}
+    </div>
+  )
+}
+
+// Aísla la pill minimizada — solo este componente se re-renderiza al minimizar
+function MinimizedPillWrapper({ currentEx, setIdx, color }) {
+  const minimized = useGymMinimized()
+  return (
+    <div style={{ opacity: minimized ? 1 : 0, pointerEvents: minimized ? 'all' : 'none',
+      transform: minimized ? 'translateY(0)' : 'translateY(80px)', transition: 'opacity 0.5s ease, transform 0.5s ease' }}>
+      <SessionPillFromContext currentEx={currentEx} setIdx={setIdx} color={color} onExpand={() => setGymMinimized(false)}/>
+    </div>
+  )
+}
+
 function FeelingScreenFromContext({ session, unit, onSubmit }) {
   const { elapsed } = useGymTimer()
   return <FeelingScreen session={session} elapsed={elapsed} unit={unit} onSubmit={onSubmit}/>
@@ -770,9 +797,6 @@ export default function GymView({ ambito }) {
     const next = unit === 'kg' ? 'lbs' : 'kg'
     setUnit(next); saveGymUnit(next)
   }
-
-  // Session — datos estables (no re-renderiza cada segundo)
-  const sessionMinimized = useGymMinimized()
 
   const {
     session, currentWeight, setCurrentWeight,
@@ -1092,13 +1116,7 @@ export default function GymView({ ambito }) {
       {/* ── Sesión activa: portal fuera de ambito-animate para evitar CSS conflicts ── */}
       {session && !sessionDone && createPortal(
         <>
-          <div className="fixed inset-0 md:left-52 z-[60] flex flex-col bg-bg"
-            style={{
-              transition: 'opacity 0.5s ease, transform 0.5s ease',
-              opacity: sessionMinimized ? 0 : 1,
-              pointerEvents: sessionMinimized ? 'none' : 'all',
-              transform: sessionMinimized ? 'scale(0.96) translateY(20px)' : 'scale(1) translateY(0)',
-            }}>
+          <OverlayVisibility>
 
             {/* Top bar */}
             <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-border shrink-0">
@@ -1203,7 +1221,7 @@ export default function GymView({ ambito }) {
                 )
               })()}
             </div>
-          </div>
+          </OverlayVisibility>
 
           {/* PR flash banner */}
           {prFlash && (
@@ -1218,10 +1236,7 @@ export default function GymView({ ambito }) {
           )}
 
           {/* Pill minimizada */}
-          <div className="transition-all duration-500"
-            style={{ opacity:sessionMinimized?1:0, pointerEvents:sessionMinimized?'all':'none', transform:sessionMinimized?'translateY(0)':'translateY(80px)' }}>
-            <SessionPillFromContext currentEx={currentEx} setIdx={session.setIdx} color={ambito.color} onExpand={() => setGymMinimized(false)}/>
-          </div>
+          <MinimizedPillWrapper currentEx={currentEx} setIdx={session.setIdx} color={ambito.color}/>
         </>,
         document.body
       )}
